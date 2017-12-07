@@ -1309,7 +1309,8 @@ def get_magnitudes_onepixel(Magnitudes, source_data, target_name, mockformat,
             truth[key][:] = source_data[source_key][onpix]
         else:
             truth[key][:] = np.repeat(source_data[source_key], nobj)
-
+    #print(set(truth['TEMPLATETYPE']))
+    
     if target_name.lower() == 'sky':
         return [targets, truth]
             
@@ -1680,7 +1681,6 @@ def targets_truth_no_spectra(params, seed=1, output_dir="./", nproc=1, nside=16,
         allskytruth = list()
           
         for source_name in sorted(params['sources'].keys()):
-            
             #Read the data
             mockformat = params['sources'][source_name]['format']
             log.info('Reading  source : {}'.format(source_name))
@@ -1713,7 +1713,7 @@ def targets_truth_no_spectra(params, seed=1, output_dir="./", nproc=1, nside=16,
             else:
                 targets, truth = target_selection(Selection, source_name, targets, truth,
                                                              nside, healpix, seed, rand, log, output_dir)
-                
+                print('AFTER TARGET SELECTION', len(targets))
                 # Downsample to a global number density if required
                 if 'density' in params['sources'][source_name].keys():
                     if source_name == 'QSO':

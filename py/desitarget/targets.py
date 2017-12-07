@@ -105,7 +105,7 @@ def encode_mtl_targetid(targets):
     encoded_targetid[mws_target]  += encode_survey_source(TARGETID_SURVEY_INDEX['mws'],0,0)
 
     # Set the source bits. Will be different for each survey.
-    desi_sources = ['ELG','LRG','QSO']
+    desi_sources = ['ELG','LRG','QSO', 'DELG']
     bgs_sources  = ['BGS_FAINT','BGS_BRIGHT']
     mws_sources  = ['MWS_MAIN','MWS_WD','MWS_NEARBY']
 
@@ -372,7 +372,7 @@ def calc_priority(targets):
 
     # DESI dark time targets
     if 'DESI_TARGET' in targets.colnames:
-        for name in ('ELG', 'LRG'):
+        for name in ('ELG', 'LRG', 'DELG'):
             ii                   = (targets['DESI_TARGET'] & desi_mask[name]) != 0
             priority[ii & unobs] = np.maximum(priority[ii & unobs], desi_mask[name].priorities['UNOBS'])
             priority[ii & done]  = np.maximum(priority[ii & done],  desi_mask[name].priorities['DONE'])

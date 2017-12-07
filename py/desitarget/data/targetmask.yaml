@@ -7,6 +7,8 @@ desi_mask:
     - [LRG,         0, "LRG", {obsconditions: DARK}]
     - [ELG,         1, "ELG", {obsconditions: DARK|GRAY}]
     - [QSO,         2, "QSO", {obsconditions: DARK}]
+    - [DELG,         3, "DELG", {obsconditions: DARK}]
+
     
     #- Not yet used, but placeholders for North vs. South selections
     - [LRG_NORTH,   8, "LRG from Bok/Mosaic data", {obsconditions: DARK}]
@@ -168,6 +170,7 @@ priorities:
     #- Dark Survey: priorities 3000 - 3999
     desi_mask:
         ELG: {UNOBS: 3000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        DELG: {UNOBS: 3200, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         LRG: {UNOBS: 3200, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         QSO: {UNOBS: 3400, MORE_ZGOOD: 3500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         LRG_NORTH: SAME_AS_LRG

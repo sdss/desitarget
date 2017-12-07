@@ -692,7 +692,10 @@ def read_gaussianfield(mock_dir_name, target_name, rand=None, bricksize=0.25,
         log.info('Sampling from {} Gaussian mixture model.'.format(target_name))
 
         GMM = SampleGMM(random_state=rand)
-        mags = GMM.sample(target_name, nobj) # [g, r, z, w1, w2, w3, w4]
+        if target_name=='DELG':
+            mags = GMM.sample('ELG', nobj)
+        else:
+            mags = GMM.sample(target_name, nobj) # [g, r, z, w1, w2, w3, w4]
 
         # Temporary hack to deal with the lower-than average ELG target densities.
         if False:
@@ -721,13 +724,13 @@ def read_gaussianfield(mock_dir_name, target_name, rand=None, bricksize=0.25,
         out.update({'Z': zz, 'GR': mags['g']-mags['r'], 'RZ': mags['r']-mags['z'],
                     'RW1': mags['r']-mags['w1'], 'W1W2': mags['w1']-mags['w2']})
 
-        if target_name in ('ELG', 'LRG'):
+        if target_name in ('ELG', 'LRG', 'DELG'):
             out.update({
                 'SHAPEEXP_R': mags['exp_r'], 'SHAPEEXP_E1': mags['exp_e1'], 'SHAPEEXP_E2': mags['exp_e2'], 
                 'SHAPEDEV_R': mags['dev_r'], 'SHAPEDEV_E1': mags['dev_e1'], 'SHAPEDEV_E2': mags['dev_e2']
                 })
 
-        if target_name == 'ELG':
+        if target_name in ('ELG', 'DELG'):
             """Selected in the r-band with g-r, r-z colors."""
 
             #vdisp = _sample_vdisp((1.9, 0.15), nmodel=nobj, rand=rand)
@@ -736,8 +739,10 @@ def read_gaussianfield(mock_dir_name, target_name, rand=None, bricksize=0.25,
                 these = np.where( bb == brickname )[0]
                 vdisp[these] = _sample_vdisp((1.9, 0.15), nmodel=len(these), rand=rand)
             
-            out.update({'TRUESPECTYPE': 'GALAXY', 'TEMPLATETYPE': 'ELG', 'TEMPLATESUBTYPE': '',
+            out.update({'TRUESPECTYPE': 'GALAXY', 'TEMPLATETYPE': target_name, 'TEMPLATESUBTYPE': '',
                         'VDISP': vdisp, 'MAG': mags['r'], 'FILTERNAME': 'decam2014-r'})
+            
+
 
         elif target_name == 'LRG':
             """Selected in the z-band with r-z, r-W1 colors."""

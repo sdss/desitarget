@@ -727,6 +727,30 @@ class MockMagnitudes(object):
         meta['FLUX_Z'][:] = 10**((22.5 - (data['MAG'][index] - data['RZ'][index]))/2.5) # z-band flux
         return meta
     
+    def delg(self, data, index=None, mockformat='gaussianfield'):
+        """Generate magnitudes for the ELG sample.
+        Currently only the GaussianField mock sample is supported.  DATA needs
+        to have Z, GR, RZ, VDISP, and SEED, which are assigned in
+        mock.io.read_gaussianfield.  
+        """
+        objtype = 'DELG'
+        if index is None:
+            index = np.arange(len(data['Z']))
+
+        meta = empty_metatable(nmodel=len(index), objtype=objtype)
+        for inkey, datakey in zip(('SEED', 'MAG', 'REDSHIFT', 'VDISP'),
+                                  ('SEED', 'MAG', 'Z', 'VDISP')):
+            meta[inkey] = data[datakey][index]
+
+        if mockformat.lower() != 'gaussianfield':
+            raise ValueError('Unrecognized mockformat {}!'.format(mockformat))
+            return meta
+        
+        meta['FLUX_G'][:] = 10**((22.5 - (data['GR'][index] + data['MAG'][index]))/2.5) # g-band flux
+        meta['FLUX_R'][:] = 10**((22.5 - data['MAG'][index])/2.5) # r-band flux
+        meta['FLUX_Z'][:] = 10**((22.5 - (data['MAG'][index] - data['RZ'][index]))/2.5) # z-band flux
+        return meta
+    
     def lrg(self, data, index=None, mockformat='gaussianfield'):
         """Generate magnitudes for the LRG sample.
         Currently only the GaussianField mock sample is supported.  DATA needs

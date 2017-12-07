@@ -193,6 +193,18 @@ class SelectTargets(object):
         truth['CONTAM_TARGET'] |= (qso != 0) * (elg == 0) * self.contam_mask.QSO_IS_GALAXY
         truth['CONTAM_TARGET'] |= (qso != 0) * (elg == 0) * self.contam_mask.QSO_CONTAM
 
+    def delg_select(self, targets, truth, boss_std=None):
+        """Select ELG targets and contaminants."""
+        from desitarget.cuts import isELG, isQSO_colors
+
+        gflux, rflux, zflux, w1flux, w2flux = targets['FLUX_G'], targets['FLUX_R'], \
+          targets['FLUX_Z'], targets['FLUX_W1'], targets['FLUX_W2']
+        
+        elg = isELG(gflux=gflux, rflux=rflux, zflux=zflux)
+
+        targets['DESI_TARGET'] |= (elg != 0) * self.desi_mask.DELG
+        targets['OBSCONDITIONS'] |= (elg != 0) * self.obsconditions.mask(self.desi_mask.DELG.obsconditions)
+        
     def faintstar_select(self, targets, truth, boss_std=None):
         """Select faint stellar contaminants for the extragalactic targets.""" 
 
