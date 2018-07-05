@@ -3,7 +3,7 @@ import numpy as np
 
 from astropy.table import Table
 
-from desitarget import desi_mask, bgs_mask, mws_mask, obsmask
+from desitarget.targetmask import desi_mask, bgs_mask, mws_mask, obsmask
 from desitarget.targets import calc_priority
 
 class TestPriorities(unittest.TestCase):
@@ -104,8 +104,8 @@ class TestPriorities(unittest.TestCase):
     def test_mask_priorities(self):
         for mask in [desi_mask, bgs_mask, mws_mask]:
             for name in mask.names():
-                if name == 'SKY' or name.startswith('STD') \
-                    or name in ['BGS_ANY', 'MWS_ANY', 'ANCILLARY_ANY',
+                if name == 'SKY' or name == 'NO_TARGET' or name.startswith('STD') \
+                    or name in ['BGS_ANY', 'MWS_ANY', 'SECONDARY_ANY',
                                 'IN_BRIGHT_OBJECT', 'NEAR_BRIGHT_OBJECT',
                                 'BRIGHT_OBJECT']:
                     self.assertEqual(mask[name].priorities, {}, 'mask.{} has priorities?'.format(name))

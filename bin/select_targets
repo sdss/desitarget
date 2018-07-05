@@ -8,11 +8,10 @@ import fitsio
 
 from desitarget import io
 from desitarget.cuts import select_targets, check_input_files, qso_selection_options, Method_sandbox_options
-from desitarget.brightstar import mask_targets
-from desitarget.skies import select_skies
+from desitarget.brightmask import mask_targets
 
-import warnings
-warnings.simplefilter('error')
+#import warnings
+#warnings.simplefilter('error')
 
 import multiprocessing
 nproc = multiprocessing.cpu_count() // 2
@@ -22,22 +21,32 @@ from desiutil.log import get_logger
 log = get_logger()
 
 from argparse import ArgumentParser
-ap = ArgumentParser()
-ap.add_argument("src", help="Tractor/sweeps file or root directory with tractor/sweeps files")
-ap.add_argument("dest", help="Output target selection file")
-ap.add_argument('-s', "--skies", action='store_true',help="Generate blank sky positions in addition to targets")
-ap.add_argument('-c', "--check", action='store_true',help="Process tractor/sweeps files to check for corruption, without running full target selection")
-ap.add_argument('-m', "--mask", help="If sent then mask the targets, the name of the mask file should be supplied")
-ap.add_argument("--sandbox", action='store_true',help="Apply the sandbox target selection algorithms")
-ap.add_argument("--FoMthresh", type=float,help='XD Figure of Merit Threshold for an ELG (sandbox)')
+ap = ArgumentParser(description='Generates DESI target bits from Legacy Surveys sweeps or tractor files')
+ap.add_argument("src", 
+                help="Tractor/sweeps file or root directory with tractor/sweeps files")
+ap.add_argument("dest", 
+                help="Output target selection file")
+ap.add_argument('-c', "--check", action='store_true',
+                help="Process tractor/sweeps files to check for corruption, without running full target selection")
+ap.add_argument('-m', "--mask", 
+                help="If sent then mask the targets, the name of the mask file should be supplied")
+ap.add_argument("--sandbox", action='store_true',
+                help="Apply the sandbox target selection algorithms")
+ap.add_argument("--FoMthresh", type=float,
+                help='XD Figure of Merit Threshold for an ELG (sandbox)')
 ap.add_argument('--qsoselection',choices=qso_selection_options,default='randomforest',
                 help="QSO target selection method")
 ap.add_argument('--Method',choices=Method_sandbox_options,default='XD',
                 help="Method used in sandbox target for ELG")
 ### ap.add_argument('-b', "--bricklist", help='filename with list of bricknames to include')
+ap.add_argument("--gaiadir", 
+                help="Base directory for chunked Gaia files (defaults to ['project/projectdirs/cosmo/work/gaia/chunks-gaia-dr2-astrom'] for NERSC)",
+                default='/project/projectdirs/cosmo/work/gaia/chunks-gaia-dr2-astrom')
+ap.add_argument("--nogaia", action='store_false',
+                help="Do NOT match to Gaia DR2 chunks files in order to populate Gaia columns for MWS selection")
 ap.add_argument("--numproc", type=int,
-    help='number of concurrent processes to use [{}]'.format(nproc),
-    default=nproc)
+                help='number of concurrent processes to use [{}]'.format(nproc),
+                default=nproc)
 
 ns = ap.parse_args()
 infiles = io.list_sweepfiles(ns.src)
@@ -47,25 +56,19 @@ if len(infiles) == 0:
     log.critical('no sweep or tractor files found')
     sys.exit(1)
 
+log.info("running on {} processors".format(ns.numproc))
+
 if ns.check:
     log.info('Check input files...')
     nbadfiles = check_input_files(infiles, numproc=ns.numproc)
     log.info('{} potentially corrupt files'.format(nbadfiles))
 else:
     targets = select_targets(infiles, numproc=ns.numproc,
-                             qso_selection=ns.qsoselection, sandbox=ns.sandbox, FoMthresh=ns.FoMthresh, Method=ns.Method)
+                             qso_selection=ns.qsoselection, match_to_gaia=ns.nogaia,
+                             sandbox=ns.sandbox, FoMthresh=ns.FoMthresh, Method=ns.Method,
+                             gaiadir=ns.gaiadir)
     if ns.mask:
-        targets = mask_targets(targets, instarmaskfile=ns.mask, nside=nside)
-
-    if ns.skies:
-        skies = select_skies(infiles,numproc=ns.numproc)
-        ntargs = len(targets)
-        nskies = len(skies)
-        nobjs = ntargs + nskies
-        targs = np.empty(nobjs, dtype=targets.dtype)
-        targs[0:ntargs] = targets
-        targs[ntargs:nobjs] = skies
-        targets = targs
+        targets = mask_targets(targets, inmaskfile=ns.mask, nside=nside)
 
     io.write_targets(ns.dest, targets, indir=ns.src,
         qso_selection=ns.qsoselection, sandboxcuts=ns.sandbox, nside=nside)

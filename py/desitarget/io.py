@@ -13,7 +13,6 @@ import numpy as np
 import fitsio
 import os, re
 from . import __version__ as desitarget_version
-from . import gitversion
 import numpy.lib.recfunctions as rfn
 import healpy as hp
 
@@ -22,7 +21,7 @@ from desiutil import depend
 #ADM this is a lookup dictionary to map RELEASE to a simpler "North" or "South" 
 #ADM photometric system. This will expand with the definition of RELEASE in the 
 #ADM Data Model (e.g. https://desi.lbl.gov/trac/wiki/DecamLegacy/DR4sched) 
-releasedict = {3000: 'S', 4000: 'N', 5000: 'S'}
+releasedict = {3000: 'S', 4000: 'N', 5000: 'S', 6000: 'N'}
 
 oldtscolumns = [
     'BRICKID', 'BRICKNAME', 'OBJID', 'TYPE',
@@ -31,8 +30,8 @@ oldtscolumns = [
     'DECAM_FRACFLUX', 'DECAM_FLUX_IVAR', 'DECAM_NOBS', 'DECAM_DEPTH', 'DECAM_GALDEPTH',
     'WISE_FLUX', 'WISE_MW_TRANSMISSION',
     'WISE_FLUX_IVAR',
-    'SHAPEDEV_R', 'SHAPEDEV_E1', 'SHAPEDEV_E2', 
-    'SHAPEDEV_R_IVAR', 'SHAPEDEV_E1_IVAR', 'SHAPEDEV_E2_IVAR', 
+    'SHAPEDEV_R', 'SHAPEDEV_E1', 'SHAPEDEV_E2',
+    'SHAPEDEV_R_IVAR', 'SHAPEDEV_E1_IVAR', 'SHAPEDEV_E2_IVAR',
     'SHAPEEXP_R', 'SHAPEEXP_E1', 'SHAPEEXP_E2',
     'SHAPEEXP_R_IVAR', 'SHAPEEXP_E1_IVAR', 'SHAPEEXP_E2_IVAR',
     'DCHISQ'
@@ -40,20 +39,22 @@ oldtscolumns = [
 
 #ADM this is an empty array of the full TS data model columns and dtypes
 tsdatamodel = np.array([], dtype=[
-        ('RELEASE', '>i4'), ('BRICKID', '>i4'), ('BRICKNAME', 'S8'), 
-        ('OBJID', '<i4'), ('TYPE', 'S4'), ('RA', '>f8'), ('RA_IVAR', '>f4'), 
-        ('DEC', '>f8'), ('DEC_IVAR', '>f4'), 
-        ('FLUX_G', '>f4'), ('FLUX_R', '>f4'), ('FLUX_Z', '>f4'), 
-        ('FLUX_IVAR_G', '>f4'), ('FLUX_IVAR_R', '>f4'), ('FLUX_IVAR_Z', '>f4'), 
-        ('MW_TRANSMISSION_G', '>f4'), ('MW_TRANSMISSION_R', '>f4'), ('MW_TRANSMISSION_Z', '>f4'), 
-        ('FRACFLUX_G', '>f4'), ('FRACFLUX_R', '>f4'), ('FRACFLUX_Z', '>f4'), 
-        ('NOBS_G', '>i2'), ('NOBS_R', '>i2'), ('NOBS_Z', '>i2'), 
-        ('PSFDEPTH_G', '>f4'), ('PSFDEPTH_R', '>f4'), ('PSFDEPTH_Z', '>f4'), 
-        ('GALDEPTH_G', '>f4'), ('GALDEPTH_R', '>f4'), ('GALDEPTH_Z', '>f4'), 
-        ('FLUX_W1', '>f4'), ('FLUX_W2', '>f4'), ('FLUX_W3', '>f4'), ('FLUX_W4', '>f4'), 
-        ('FLUX_IVAR_W1', '>f4'), ('FLUX_IVAR_W2', '>f4'), ('FLUX_IVAR_W3', '>f4'), ('FLUX_IVAR_W4', '>f4'), 
-        ('MW_TRANSMISSION_W1', '>f4'), ('MW_TRANSMISSION_W2', '>f4'), 
-        ('MW_TRANSMISSION_W3', '>f4'), ('MW_TRANSMISSION_W4', '>f4'), 
+        ('RELEASE', '>i4'), ('BRICKID', '>i4'), ('BRICKNAME', 'S8'),
+        ('OBJID', '<i4'), ('TYPE', 'S4'), ('RA', '>f8'), ('RA_IVAR', '>f4'),
+        ('DEC', '>f8'), ('DEC_IVAR', '>f4'),
+        ('FLUX_G', '>f4'), ('FLUX_R', '>f4'), ('FLUX_Z', '>f4'),
+        ('FLUX_IVAR_G', '>f4'), ('FLUX_IVAR_R', '>f4'), ('FLUX_IVAR_Z', '>f4'),
+        ('MW_TRANSMISSION_G', '>f4'), ('MW_TRANSMISSION_R', '>f4'), ('MW_TRANSMISSION_Z', '>f4'),
+        ('FRACFLUX_G', '>f4'), ('FRACFLUX_R', '>f4'), ('FRACFLUX_Z', '>f4'),
+        ('NOBS_G', '>i2'), ('NOBS_R', '>i2'), ('NOBS_Z', '>i2'),
+        ('PSFDEPTH_G', '>f4'), ('PSFDEPTH_R', '>f4'), ('PSFDEPTH_Z', '>f4'),
+        ('GALDEPTH_G', '>f4'), ('GALDEPTH_R', '>f4'), ('GALDEPTH_Z', '>f4'),
+        ('FLUX_W1', '>f4'), ('FLUX_W2', '>f4'), ('FLUX_W3', '>f4'), ('FLUX_W4', '>f4'),
+        ('FLUX_IVAR_W1', '>f4'), ('FLUX_IVAR_W2', '>f4'), ('FLUX_IVAR_W3', '>f4'), ('FLUX_IVAR_W4', '>f4'),
+        ('MW_TRANSMISSION_W1', '>f4'), ('MW_TRANSMISSION_W2', '>f4'),
+        ('MW_TRANSMISSION_W3', '>f4'), ('MW_TRANSMISSION_W4', '>f4'),
+        ('ALLMASK_G', '>i2'), ('ALLMASK_R', '>i2'), ('ALLMASK_Z', '>i2'),
+        ('FRACDEV', '>f4'), ('FRACDEV_IVAR', '>f4'),
         ('SHAPEDEV_R', '>f4'), ('SHAPEDEV_E1', '>f4'), ('SHAPEDEV_E2', '>f4'),
         ('SHAPEDEV_R_IVAR', '>f4'), ('SHAPEDEV_E1_IVAR', '>f4'), ('SHAPEDEV_E2_IVAR', '>f4'),
         ('SHAPEEXP_R', '>f4'), ('SHAPEEXP_E1', '>f4'), ('SHAPEEXP_E2', '>f4'),
@@ -104,7 +105,7 @@ def convert_from_old_data_model(fx,columns=None):
 
     #ADM create a new numpy array with the fields from the new data model...
     outdata = np.empty(nrows, dtype=dt)
-    
+
     #ADM ...and populate them with the passed columns of data
     for col in sharedcols:
         outdata[col] = indata[col]
@@ -129,7 +130,117 @@ def convert_from_old_data_model(fx,columns=None):
     outdata['RELEASE'] = 3000
 
     return outdata
+
+
+def add_gaia_columns(indata):
+    """Add columns needed for MWS targeting to a sweeps-style array
+
+    Parameters
+    ----------
+    indata : :class:`numpy.ndarray`
+        Numpy structured array to which to add Gaia-relevant columns
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        Input array with the Gaia columns added
+
+    Notes
+    -----
+        - Gaia columns resemble the data model in :mod:`desitarget.gaiamatch` 
+          but with "GAIA" prepended to the dtype names
+    """
+    #ADM import the Gaia data model from gaiamatch
+    from desitarget.gaiamatch import gaiadatamodel
+
+    #ADM create the combined data model
+    dt = indata.dtype.descr + gaiadatamodel.dtype.descr
+
+    #ADM create a new numpy array with the fields from the new data model...
+    nrows = len(indata)
+    outdata = np.zeros(nrows, dtype=dt)
+
+    #ADM ...and populate them with the passed columns of data
+    for col in indata.dtype.names:
+        outdata[col] = indata[col]
+
+    #ADM set REF_ID to -1 to indicate nothing has a Gaia match (yet)
+    outdata['REF_ID'] = -1
     
+    return outdata
+
+
+def add_subpriority(indata):
+    """Add the SUBPRIORITY column to a sweeps-style array
+
+    Parameters
+    ----------
+    indata : :class:`numpy.ndarray`
+        Numpy structured array to which to add SUBPRIORITY column
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        Input array with SUBPRIORITY added (and set)
+    """
+    #ADM add SUBPRIORITY to the data model
+    spdt = [('SUBPRIORITY', '>f4')]
+    dt = indata.dtype.descr + spdt
+
+    #ADM create a new numpy array with the fields from the new data model...
+    nrows = len(indata)
+    outdata = np.empty(nrows, dtype=dt)
+
+    #ADM ...and populate them with the passed columns of data
+    for col in indata.dtype.names:
+        outdata[col] = indata[col]
+
+    #ADM populate the subpriority array randomly from 0->1
+    outdata["SUBPRIORITY"] = np.random.random(nrows)
+
+    return outdata
+
+
+def add_photsys(indata):
+    """Add the PHOTSYS column to a sweeps-style array
+
+    Parameters
+    ----------
+    indata : :class:`numpy.ndarray`
+        Numpy structured array to which to add PHOTSYS column
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        Input array with PHOTSYS added (and set using RELEASE)
+
+    Notes
+    -----
+        - The PHOTSYS column is only added if the RELEASE column
+          is available in the passed `indata`
+    """
+    #ADM only add the PHOTSYS column if RELEASE exists
+    if 'RELEASE' in indata.dtype.names:
+        #ADM add PHOTSYS to the data model
+        pdt = [('PHOTSYS','|S1')]
+        dt = indata.dtype.descr + pdt
+
+        #ADM create a new numpy array with the fields from the new data model...
+        nrows = len(indata)
+        outdata = np.empty(nrows, dtype=dt)
+
+        #ADM ...and populate them with the passed columns of data
+        for col in indata.dtype.names:
+            outdata[col] = indata[col]
+
+        #ADM add the PHOTSYS column
+        photsys = release_to_photsys(indata["RELEASE"])
+        outdata['PHOTSYS'] = photsys
+    else:
+        outdata = indata
+
+    return outdata
+
 
 def read_tractor(filename, header=False, columns=None):
     """Read a tractor catalogue file.
@@ -166,16 +277,28 @@ def read_tractor(filename, header=False, columns=None):
             readcolumns = list(oldtscolumns)
     else:
         readcolumns = list(columns)
-        
+
     #- tractor files have BRICK_PRIMARY; sweep files don't
     if (columns is None) and \
        (('BRICK_PRIMARY' in fxcolnames) or ('brick_primary' in fxcolnames)):
         readcolumns.append('BRICK_PRIMARY')
 
+    #ADM if SUBPRIORITY was passed by the MWS group, add it to the columns to read
+    if (columns is None) and \
+       (('SUBPRIORITY' in fxcolnames) or ('subpriority' in fxcolnames)):
+        readcolumns.append('SUBPRIORITY')
+
+    #ADM if Gaia information was passed, add it to the columns to read
+    if (columns is None) and \
+       (('REF_ID' in fxcolnames) or ('ref_id' in fxcolnames)):
+        from desitarget.gaiamatch import gaiadatamodel
+        gaiacols = gaiadatamodel.dtype.names
+        readcolumns += gaiacols
+
     if (columns is None) and \
        (('RELEASE' not in fxcolnames) and ('release' not in fxcolnames)):
         #ADM Rewrite the data completely to correspond to the DR4+ data model.
-        #ADM we default to writing RELEASE = 3000 ("DR3 or before data')
+        #ADM we default to writing RELEASE = 3000 ("DR3, or before, data")
         data = convert_from_old_data_model(fx,columns=readcolumns)
     else:
         data = fx[1].read(columns=readcolumns)
@@ -183,10 +306,12 @@ def read_tractor(filename, header=False, columns=None):
     #ADM need to add the SUBPRIORITY column if it wasn't passed by the MWS group
     if (columns is None) and \
        (('SUBPRIORITY' not in fxcolnames) and ('subpriority' not in fxcolnames)):
-        subpriority = np.zeros(len(data), dtype='>f4')
-        #ADM populate the subpriority array randomly from 0->1, retaining the dtype 
-        subpriority[...] = np.random.random(len(data))
-        data = rfn.append_fields(data, 'SUBPRIORITY', subpriority, usemask=False)
+        data = add_subpriority(data)
+
+    #ADM add Gaia columns if not passed
+    if (columns is None) and \
+       (('REF_ID' not in fxcolnames) and ('g_id' not in fxcolnames)):
+        data = add_gaia_columns(data)
 
     #ADM Empty (length 0) files have dtype='>f8' instead of 'S8' for brickname
     if len(data) == 0:
@@ -201,6 +326,10 @@ def read_tractor(filename, header=False, columns=None):
         kind = data[colname].dtype.kind
         if kind == 'U' or kind == 'S':
             data[colname] = np.char.rstrip(data[colname])
+
+    #ADM add the PHOTSYS column to unambiguously check whether we're using imaging
+    #ADM from the "North" or "South"
+    data = add_photsys(data)
 
     if header:
         fx.close()
@@ -245,7 +374,7 @@ def release_to_photsys(release):
     :class:`str` or :class:`~numpy.ndarray`
         'N' if the RELEASE corresponds to the northern photometric
         system (MzLS+BASS) and 'S' if it's the southern system (DECaLS)
-        
+
     Notes
     -----
     Defaults to 'U' if the system is not recognized
@@ -267,7 +396,7 @@ def release_to_photsys(release):
     return r2p[release]
 
 
-def write_targets(filename, data, indir=None, qso_selection=None, 
+def write_targets(filename, data, indir=None, qso_selection=None,
                   sandboxcuts=False, nside=None):
     """Write a target catalogue.
 
@@ -276,8 +405,8 @@ def write_targets(filename, data, indir=None, qso_selection=None,
     filename : output target selection file
     data     : numpy structured array of targets to save
     nside: :class:`int`
-        If passed, add a column to the targets array popluated 
-        with HEALPix pixels at resolution nside
+        If passed, add a column to the targets array popluated
+        with HEALPixels at resolution `nside`
     """
     # FIXME: assert data and tsbits schema
 
@@ -317,11 +446,118 @@ def write_targets(filename, data, indir=None, qso_selection=None,
         hdr['HPXNSIDE'] = nside
         hdr['HPXNEST'] = True
 
-    #ADM add PHOTSYS column, mapped from RELEASE
-    photsys = release_to_photsys(data["RELEASE"])
-    data = rfn.append_fields(data, 'PHOTSYS', photsys, usemask=False)    
-
     fitsio.write(filename, data, extname='TARGETS', header=hdr, clobber=True)
+
+
+def write_skies(filename, data, indir=None, apertures_arcsec=None, 
+                badskyflux=None, nside=None):
+    """Write a target catalogue.
+
+    Parameters
+    ----------
+    filename : :class:`str`
+        Output target selection file name
+    data  : :class:`~numpy.ndarray` 
+        Array of skies to write to file
+    indir : :class:`str`, optional, defaults to None
+        Name of input Legacy Survey Data Release directory, write to header
+        of output file if passed (and if not None).
+    apertures_arcsec : :class:`list` or `float`, optional, defaults to None
+        list of aperture radii in arcsecondsm write each aperture as an
+        individual line in the header, if passed (and if not None).
+    badskyflux : :class:`list` or `float`, optional, defaults to None
+        list of aperture radii in arcsecondsm write each aperture as an
+        individual line in the header, if passed (and if not None).
+    nside: :class:`int`
+        If passed, add a column to the skies array popluated with HEALPixels 
+        at resolution `nside`
+    """
+    #ADM set up the default logger
+    from desiutil.log import get_logger
+    log = get_logger()
+
+    #ADM force OBSCONDITIONS to be 65535 
+    #ADM (see https://github.com/desihub/desitarget/pull/313)
+    data["OBSCONDITIONS"] = 2**16-1
+
+    #- Create header to include versions, etc.
+    hdr = fitsio.FITSHDR()
+    depend.setdep(hdr, 'desitarget', desitarget_version)
+    depend.setdep(hdr, 'desitarget-git', gitversion())
+
+    if indir is not None:
+        depend.setdep(hdr, 'input-data-release', indir)
+        #ADM note that if 'dr' is not in the indir DR
+        #ADM directory structure, garbage will
+        #ADM be rewritten gracefully in the header
+        drstring = 'dr'+indir.split('dr')[-1][0]
+        depend.setdep(hdr, 'photcat', drstring)
+
+    if apertures_arcsec is not None:
+        for i,ap in enumerate(apertures_arcsec):
+            apname = "AP{}".format(i)
+            apsize = "{:.2f}".format(ap)
+            hdr[apname] = apsize
+
+    if badskyflux is not None:
+        for i,bs in enumerate(badskyflux):
+            bsname = "BADFLUX{}".format(i)
+            bssize = "{:.2f}".format(bs)
+            hdr[bsname] = bssize
+
+    #ADM add HEALPix column, if requested by input
+    if nside is not None:
+        theta, phi = np.radians(90-data["DEC"]), np.radians(data["RA"])
+        hppix = hp.ang2pix(nside, theta, phi, nest=True)
+        data = rfn.append_fields(data, 'HPXPIXEL', hppix, usemask=False)
+        hdr['HPXNSIDE'] = nside
+        hdr['HPXNEST'] = True
+
+    fitsio.write(filename, data, extname='SKY_TARGETS', header=hdr, clobber=True)
+
+
+def write_gfas(filename, data, indir=None, nside=None):
+    """Write a catalogue of Guide/Focus/Alignment targets.
+
+    Parameters
+    ----------
+    filename : :class:`str`
+        Output file name
+    data  : :class:`~numpy.ndarray` 
+        Array of GFAs to write to file
+    indir : :class:`str`, optional, defaults to None
+        Name of input Legacy Survey Data Release directory, write to header
+        of output file if passed (and if not None).
+    nside: :class:`int`
+        If passed, add a column to the GFAs array popluated with HEALPixels 
+        at resolution `nside`
+    """
+    #ADM set up the default logger
+    from desiutil.log import get_logger
+    log = get_logger()
+
+    #ADM create header to include versions, etc.
+    hdr = fitsio.FITSHDR()
+    depend.setdep(hdr, 'desitarget', desitarget_version)
+    depend.setdep(hdr, 'desitarget-git', gitversion())
+
+    if indir is not None:
+        depend.setdep(hdr, 'input-data-release', indir)
+        #ADM note that if 'dr' is not in the indir DR
+        #ADM directory structure, garbage will
+        #ADM be rewritten gracefully in the header
+        drstring = 'dr'+indir.split('dr')[-1][0]
+        depend.setdep(hdr, 'photcat', drstring)
+
+    #ADM add HEALPix column, if requested by input
+    if nside is not None:
+        theta, phi = np.radians(90-data["DEC"]), np.radians(data["RA"])
+        hppix = hp.ang2pix(nside, theta, phi, nest=True)
+        data = rfn.append_fields(data, 'HPXPIXEL', hppix, usemask=False)
+        hdr['HPXNSIDE'] = nside
+        hdr['HPXNEST'] = True
+
+    fitsio.write(filename, data, extname='GFA_TARGETS', header=hdr, clobber=True)
 
 
 def iter_files(root, prefix, ext='fits'):
@@ -517,3 +753,65 @@ def whitespace_fits_read(filename, **kwargs):
         return data, header
 
     return data
+
+
+def load_pixweight(inmapfile, nside, pixmap=None):
+    '''Loads a pixel map from file and resamples to a different HEALPixel resolution (nside)
+
+    Parameters
+    ----------
+    inmapfile : :class:`str`
+        Name of the file containing the pixel weight map
+    nside : :class:`int`
+        After loading, the array will be resampled to this HEALPix nside
+    pixmap: `~numpy.array`, optional, defaults to None
+        Pass a pixel map instead of loading it from file
+
+    Returns
+    -------
+    :class:`~numpy.array`
+        HEALPixel weight map resampled to the requested nside
+    '''
+    import healpy as hp
+    from desiutil.log import get_logger
+    log = get_logger()
+
+    if pixmap is not None:
+        log.debug('Using input pixel weight map of length {}.'.format(len(pixmap)))
+    else:
+        #ADM read in the pixel weights file                                                                                                  
+        if not os.path.exists(inmapfile):
+            log.fatal('Input directory does not exist: {}'.format(inmapfile))
+            raise ValueError
+        pixmap = fitsio.read(inmapfile)
+            
+    #ADM determine the file's nside, and flag a warning if the passed nside exceeds it                                                                
+    npix = len(pixmap)
+    truenside = hp.npix2nside(len(pixmap))
+    if truenside < nside:
+        log.warning("downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}"
+                  .format(nside,pixfile,truenside))
+
+    #ADM resample the map                                                                                                                             
+    return hp.pixelfunc.ud_grade(pixmap,nside,order_in='NESTED',order_out='NESTED')
+
+
+def gitversion():
+    """Returns `git describe --tags --dirty --always`,
+    or 'unknown' if not a git repo"""
+    import os
+    from subprocess import Popen, PIPE, STDOUT
+    origdir = os.getcwd()
+    os.chdir(os.path.dirname(__file__))
+    try:
+        p = Popen(['git', "describe", "--tags", "--dirty", "--always"], stdout=PIPE, stderr=STDOUT)
+    except EnvironmentError:
+        return 'unknown'
+
+    os.chdir(origdir)
+    out = p.communicate()[0]
+    if p.returncode == 0:
+        #- avoid py3 bytes and py3 unicode; get native str in both cases
+        return str(out.rstrip().decode('ascii'))
+    else:
+        return 'unknown'
