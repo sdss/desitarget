@@ -2,6 +2,8 @@
 desitarget
 ==========
 
+**Deprecated for LVM developement until further notice.**  This is a fork of desitarget for LVM.
+
 Introduction
 ------------
 
