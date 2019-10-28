@@ -4,365 +4,429 @@ desitarget.gfa
 
 Guide/Focus/Alignment targets
 """
-
 import fitsio
 import numpy as np
 import os.path
 import glob
 import os
+from time import time
+import healpy as hp
 
 import desimodel.focalplane
 import desimodel.io
+from desimodel.footprint import is_point_in_desi
 
 import desitarget.io
 from desitarget.internal import sharedmem
-from desitarget.gaiamatch import match_gaia_to_primary
-from desitarget.targets import encode_targetid
+from desitarget.gaiamatch import read_gaia_file, find_gaia_files_beyond_gal_b
+from desitarget.gaiamatch import find_gaia_files_tiles, find_gaia_files_box
+from desitarget.gaiamatch import find_gaia_files_hp
+from desitarget.uratmatch import match_to_urat
+from desitarget.targets import encode_targetid, resolve
+from desitarget.geomask import is_in_gal_box, is_in_box, is_in_hp
+from desitarget.geomask import bundle_bricks, sweep_files_touch_hp
 
-#ADM set up default DESI logger
+from desiutil import brick
 from desiutil.log import get_logger
+
+# ADM set up the Legacy Surveys bricks object.
+bricks = brick.Bricks(bricksize=0.25)
+# ADM set up the default DESI logger.
 log = get_logger()
 
-from time import time
-start = time()
-
-#ADM the current data model for columns in the GFA files
+# ADM the current data model for columns in the GFA files.
 gfadatamodel = np.array([], dtype=[
-    ('TARGETID', 'i8'),  ('BRICKID', 'i4'), ('BRICK_OBJID', 'i4'),  
+    ('RELEASE', '>i4'), ('TARGETID', 'i8'),
+    ('BRICKID', 'i4'), ('BRICK_OBJID', 'i4'),
     ('RA', 'f8'), ('DEC', 'f8'), ('RA_IVAR', 'f4'), ('DEC_IVAR', 'f4'),
     ('TYPE', 'S4'),
     ('FLUX_G', 'f4'), ('FLUX_R', 'f4'), ('FLUX_Z', 'f4'),
-    ('FLUX_IVAR_G', 'f4'), ('FLUX_IVAR_R', 'f4'), ('FLUX_IVAR_Z', 'f4'),    
-    ('REF_ID', 'i8'), 
+    ('FLUX_IVAR_G', 'f4'), ('FLUX_IVAR_R', 'f4'), ('FLUX_IVAR_Z', 'f4'),
+    ('REF_ID', 'i8'), ('REF_CAT', 'S2'), ('REF_EPOCH', 'f4'),
+    ('PARALLAX', 'f4'), ('PARALLAX_IVAR', 'f4'),
     ('PMRA', 'f4'), ('PMDEC', 'f4'), ('PMRA_IVAR', 'f4'), ('PMDEC_IVAR', 'f4'),
-    ('GAIA_PHOT_G_MEAN_MAG', '>f4'), ('GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR', '>f4'), 
-    ('GAIA_ASTROMETRIC_EXCESS_NOISE', '>f4')
+    ('GAIA_PHOT_G_MEAN_MAG', '>f4'), ('GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR', '>f4'),
+    ('GAIA_PHOT_BP_MEAN_MAG', '>f4'), ('GAIA_PHOT_BP_MEAN_FLUX_OVER_ERROR', '>f4'),
+    ('GAIA_PHOT_RP_MEAN_MAG', '>f4'), ('GAIA_PHOT_RP_MEAN_FLUX_OVER_ERROR', '>f4'),
+    ('GAIA_ASTROMETRIC_EXCESS_NOISE', '>f4'), ('URAT_ID', '>i8'), ('URAT_SEP', '>f4')
 ])
 
 
-def near_tile(data, tilera, tiledec, window_ra=4.0, window_dec=4.0):
-    """Trims the input data to a rectangular windonw in RA,DEC.
+def gaia_morph(gaia):
+    """Retrieve morphological type for Gaia sources.
 
     Parameters
     ----------
-    data : :class:`np.ndarray`
-        Array with target data. Includes at least 'RA' and 'DEC' columns.
-    tilera: :class:`float`
-        Scalar with the central RA coordinate.
-    tiledec: :class:`float`
-        Scalar with the central DEC coordinate
-    window_ra: :class:`float`
-        Value of the window in RA to trim the data.
-    window_dec: :class:`float`
-        Value of the window in DEC to trim the data.
+    gaia: :class:`~numpy.ndarray`
+        Numpy structured array containing at least the columns,
+        `GAIA_PHOT_G_MEAN_MAG` and `GAIA_ASTROMETRIC_EXCESS_NOISE`.
 
     Returns
     -------
-    :class:`bool`
-        Boolean array. True if the target falls inside the window. False otherwise.
+    :class:`~numpy.array`
+        An array of strings that is the same length as the input array
+        and is set to either "GPSF" or "GGAL" based on a
+        morphological cut with Gaia.
     """
-    delta_RA = data['RA'] - tilera
-    delta_dec = data['DEC'] - tiledec
-    jj = np.fabs(delta_RA) < window_ra
-    jj = jj | ((delta_RA + 360.0) < window_ra)
-    jj = jj | ((360.0 - delta_RA) < window_ra)
-    jj = jj & (np.fabs(delta_dec) < window_dec)
-    return jj
+    # ADM determine which objects are Gaia point sources.
+    g = gaia['GAIA_PHOT_G_MEAN_MAG']
+    aen = gaia['GAIA_ASTROMETRIC_EXCESS_NOISE']
+    psf = np.logical_or(
+        (g <= 19.) * (aen < 10.**0.5),
+        (g >= 19.) * (aen < 10.**(0.5 + 0.2*(g - 19.)))
+    )
+
+    # ADM populate morphological information.
+    morph = np.zeros(len(gaia), dtype=gfadatamodel["TYPE"].dtype)
+    morph[psf] = b'GPSF'
+    morph[~psf] = b'GGAL'
+
+    return morph
 
 
-def write_gfa_targets(sweep_dir="./", desi_tiles=None, output_path="./", log=None):
-    """Computes and writes to disk GFA targets for every tile
+def gaia_gfas_from_sweep(filename, maglim=18.):
+    """Create a set of GFAs for one sweep file.
 
     Parameters
     ----------
-    sweep_dir : :class:`string`
-        Path to the sweep files.
-
-    desi_tiles: :class:`np.ndarray`
-        Set of desitiles to compute the GFA targets.
-
-    output_path : :class:`string`
-        Path where the "gfa_targets_tile" files will be written.
-
-    log : :class: `desiutil.log`
-        Desiutil logger
-    """
-
-    if log is None:
-        from desiutil.log import get_logger
-        log = get_logger()
-
-    if desi_tiles is None:
-        desi_tiles = desimodel.io.load_tiles()
-
-    # list sweep files to be used
-    sweep_files = desitarget.io.list_sweepfiles(sweep_dir)
-    n_sweep = len(sweep_files)
-    log.info('{} sweep files'.format(len(sweep_files)))
-
-    #load all sweep data
-    sweep_data = []
-    #n_sweep = 10
-
-    for i in range(n_sweep):
-        sweep_file = sweep_files[i]
-        data = fitsio.read(sweep_file, columns=['RA', 'DEC', 'FLUX_R'])
-
-        #- Keep just mag>18
-        rfluxlim = 10**(0.4*(22.5-18))
-        ii = data['FLUX_R'] > rfluxlim
-        data = data[ii]
-
-        #- Faster for a small number of test tiles, but slower if using all tiles
-        # keep = np.zeros(len(data), dtype=bool)
-        # for tile in desi_tiles:
-        #     keep |= near_tile(data, tile['RA'], tile['DEC'])
-        # if np.any(keep):
-        #     sweep_data.append(data[keep])
-
-        sweep_data.append(data)
-
-        log.info('Loaded file {} out of {}'.format(i, n_sweep))
-
-    all_sweep = np.concatenate(sweep_data, axis=0)
-
-    log.info('There are {:.2f}M targets in the sweeps'.format(len(all_sweep)/1E6))
-
-    #find IDs of targets on every individual tile
-    for i in range(len(desi_tiles)):
-        tile_id = desi_tiles['TILEID'][i]
-        log.info('computing TILEID {:05d} on RA {:6.2f} DEC {:6.2f}'.format(tile_id, desi_tiles['RA'][i], desi_tiles['DEC'][i]))
-
-        # select targets in a smaller window centered on tile
-        jj = near_tile(all_sweep, desi_tiles['RA'][i], desi_tiles['DEC'][i])
-
-        #find GFA targets in the smaller input window
-        if np.count_nonzero(jj):
-            mini_sweep = all_sweep[jj]
-            log.info('Inside mini_sweep: {:.2f}M targets'.format(len(mini_sweep)/1E6))
-
-            targetindices, gfaindices = desimodel.focalplane.on_tile_gfa(tile_id, mini_sweep)
-            log.info('Found {:d} targets on TILEID {:05d}'.format(len(targetindices), tile_id))
-
-            if len(targetindices):
-                gfa_targets = np.lib.recfunctions.append_fields(
-                    mini_sweep[targetindices], 'GFA_LOC', gfaindices,
-                    usemask=False)
-
-                filename = os.path.join(output_path, "gfa_targets_tile_{:05d}.fits".format(tile_id))
-                log.info("writing to {}".format(filename))
-                a = fitsio.write(filename, gfa_targets, extname='GFA', clobber=True)
-
-
-def add_gfa_info_to_fa_tiles(gfa_file_path="./", fa_file_path=None, output_path=None, log=None):
-    """Adds GFA info into fiberassign tiles.
-
-    Parameters
-    ----------
-    gfa_file_path : :class:`string`
-        Path to the "gfa_targets_tile" files.
-
-    fa_file_path : :class:`string`
-        Path to the results of fiberassign.
-
-    output_path : :class:`string`
-        Path where the "tile_*" files will be rewritten including the GFA info
-
-    log : :class: `desiutil.log`
-        Desiutil logger
-    """
-    if log is None:
-        from desiutil.log import get_logger
-        log = get_logger()
-    if not os.path.isdir(output_path):
-        os.makedirs(output_path, exist_ok=True)
-
-    #rewrite a new tilefile with all the info in three HDUs
-    gfa_files = glob.glob(os.path.join(gfa_file_path, "gfa_targets_*.fits"))
-    gfa_tile_id = {}
-    for gfa_file in gfa_files:
-        f = gfa_file.split('/')[-1]
-        fileid = f.split("_")[-1]
-        fileid = fileid[0:5]
-        gfa_tile_id[fileid] = gfa_file
-
-    if fa_file_path:
-        fiberassign_tilefiles = glob.glob(os.path.join(fa_file_path,"tile*.fits"))
-        log.info('{} fiberassign tile files'.format(len(fiberassign_tilefiles)))
-    else:
-        fiberassign_tilefiles = []
-        log.info('Empty fiberassign path')
-
-    fa_tile_id = {}
-    for fa_file in fiberassign_tilefiles:
-        f = fa_file.split('/')[-1]
-        fileid = f.split("_")[-1]
-        fileid = fileid[0:5]
-        fa_tile_id[fileid] = fa_file
-
-    for gfa_id in gfa_tile_id.keys():
-        if gfa_id in fa_tile_id.keys():
-            log.info('rewriting tilefile for tileid {}'.format(gfa_id))
-            gfa_data = fitsio.read(gfa_tile_id[gfa_id])
-            fiber_data = fitsio.read(fa_tile_id[gfa_id], ext=1)
-            potential_data = fitsio.read(fa_tile_id[gfa_id], ext=2)
-
-            tileout = os.path.join(output_path, 'tile_{}.fits'.format(gfa_id))
-            fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
-            fitsio.write(tileout, potential_data, extname='POTENTIAL')
-            fitsio.write(tileout, gfa_data, extname='GFA')
-
-
-def gaia_gfas_from_sweep(objects, maglim=18., gaiabounds=[0.,360.,-90.,90.], 
-            gaiadir='/project/projectdirs/cosmo/work/gaia/chunks-gaia-dr2-astrom'):
-    """Create a set of GFAs from Gaia-matching for one sweep file or sweep objects
-
-    Parameters
-    ----------
-    objects: :class:`numpy.ndarray` or `str`
-        Numpy structured array with UPPERCASE columns needed for target selection, OR 
-        a string corresponding to a sweep filename.
+    filename: :class:`str`
+        A string corresponding to the full path to a sweep file name.
     maglim : :class:`float`, optional, defaults to 18
         Magnitude limit for GFAs in Gaia G-band.
-    gaiabounds : :class:`list`, optional, defaults to the whole sky
-        The area over which to retrieve Gaia objects that don't match a sweeps object. 
-        Pass a 4-entry list to form a box bounded by [RAmin, RAmax, DECmin, DECmax].
-    gaiadir : :class:`str`, optional, defaults to Gaia DR2 path at NERSC
-        Root directory of a Gaia Data Release as used by the Legacy Surveys.
 
     Returns
     -------
-    :class:`numpy.ndarray`
-        GFA objects from Gaia for the region bounded by `gaiabounds`, formatted 
-        according to `desitarget.gfa.gfadatamodel`.
+    :class:`~numpy.ndarray`
+        GFA objects from Gaia, formatted according to `desitarget.gfa.gfadatamodel`.
     """
-    #ADM read in objects if a filename was passed instead of the actual data
-    if isinstance(objects, str):
-        objects = desitarget.io.read_tractor(objects)
+    # ADM read in the objects.
+    objects = fitsio.read(filename)
 
-    #ADM As a mild speed up, only consider sweeps objects brighter than 3 mags
-    #ADM fainter than the passed Gaia magnitude limit. Note that Gaia G-band
-    #ADM approximates SDSS r-band. 
-    w = np.where( (objects["FLUX_G"] > 10**((22.5-(maglim+3))/2.5)) |
-                  (objects["FLUX_R"] > 10**((22.5-(maglim+3))/2.5)) |
-                  (objects["FLUX_Z"] > 10**((22.5-(maglim+3))/2.5)) )[0]
-    objects = objects[w]
-
+    # ADM As a mild speed up, only consider sweeps objects brighter than 3 mags
+    # ADM fainter than the passed Gaia magnitude limit. Note that Gaia G-band
+    # ADM approximates SDSS r-band.
+    ii = ((objects["FLUX_G"] > 10**((22.5-(maglim+3))/2.5)) |
+          (objects["FLUX_R"] > 10**((22.5-(maglim+3))/2.5)) |
+          (objects["FLUX_Z"] > 10**((22.5-(maglim+3))/2.5)))
+    objects = objects[ii]
     nobjs = len(objects)
 
-    #ADM match the sweeps objects to Gaia retaining Gaia objects that do not
-    #ADM have a match in the sweeps
-#    log.info('Starting Gaia match for {} objects...t = {:.1f}s'
-#             .format(nobjs,time()-start))
-    gaiainfo = match_gaia_to_primary(objects, gaiadir=gaiadir,
-                                     retaingaia=True, gaiabounds=gaiabounds)
-#    log.info('Done with Gaia match...t = {:.1f}s'.format(time()-start))
-    #ADM add the Gaia column information to the primary array
-    for col in gaiainfo.dtype.names:
-        objects[col] = gaiainfo[col][:nobjs]
-    
-    #ADM an additional array to hold the Gaia objects that have no sweeps match
-    supg = np.zeros(len(gaiainfo) - nobjs, dtype=objects.dtype)
-    #ADM make sure all of these additional columns have "ridiculous" numbers
-    supg[...] = -1
-    #ADM but default the IVARs that would appear in the sweeps (g/r/z) to 0
-    for col in ["FLUX_IVAR_G", "FLUX_IVAR_R", "FLUX_IVAR_Z"]:
-        supg[col] = 0.
-    #ADM and then TYPE to PSF
-    supg["TYPE"] = 'PSF'
-    #ADM populate these additional objects
-    for col in gaiainfo.dtype.names:
-        supg[col] = gaiainfo[col][nobjs:]
-    #ADM store the Gaia RA/DEC as the default for objects with no sweeps match
-    for col in ["RA","DEC"]:
-        supg[col] = supg["GAIA_"+col]
+    # ADM only retain objects with Gaia matches.
+    # ADM It's fine to propagate an empty array if there are no matches
+    # ADM The sweeps use 0 for objects with no REF_ID.
+    objects = objects[objects["REF_ID"] > 0]
 
-    #ADM combine the primary and supplemental arrays
-    objects = np.hstack([objects,supg])
-
-    #ADM only retain objects with Gaia matches
-    #ADM it's fine to propagate an empty array if there are no matches
-    w = np.where(objects["REF_ID"] != -1)[0]
-    objects = objects[w]
-
-    #ADM it's possible that a Gaia object matches two sweeps objects, so
-    #ADM only record unique Gaia IDs
-    _, ind = np.unique(objects["REF_ID"], return_index=True)
-#    log.info('Removed {} duplicated Gaia objects...t = {:.1f}s'
-#             .format(len(objects)-len(ind),time()-start))
-    objects = objects[ind]
-     
-    #ADM determine a TARGETID for any objects on a brick (this should
-    #ADM end up as -1 for anything that is Gaia-only as all of
-    #ADM objid, brickid and release should be -1
+    # ADM determine a TARGETID for any objects on a brick.
     targetid = encode_targetid(objid=objects['OBJID'],
                                brickid=objects['BRICKID'],
                                release=objects['RELEASE'])
 
-    #ADM format everything according to the data model
+    # ADM format everything according to the data model.
     gfas = np.zeros(len(objects), dtype=gfadatamodel.dtype)
-    #ADM make sure all columns initially have "ridiculous" numbers                                                                                       
+    # ADM make sure all columns initially have "ridiculous" numbers.
     gfas[...] = -99.
-    #ADM remove the TARGETID and BRICK_OBJID columns and populate them later
-    #ADM as they require special treatment
+    gfas["REF_CAT"] = ""
+    gfas["REF_EPOCH"] = 2015.5
+    # ADM remove the TARGETID, BRICK_OBJID, REF_CAT, REF_EPOCH columns
+    # ADM and populate them later as they require special treatment.
     cols = list(gfadatamodel.dtype.names)
-    for col in ["TARGETID","BRICK_OBJID"]:
+    for col in ["TARGETID", "BRICK_OBJID", "REF_CAT", "REF_EPOCH",
+                "URAT_ID", "URAT_SEP"]:
         cols.remove(col)
     for col in cols:
         gfas[col] = objects[col]
-    #ADM populate the TARGETID column
+    # ADM populate the TARGETID column.
     gfas["TARGETID"] = targetid
-    #ADM populate the BRICK_OBJID column
+    # ADM populate the BRICK_OBJID column.
     gfas["BRICK_OBJID"] = objects["OBJID"]
+    # ADM REF_CAT and REF_EPOCH didn't exist before DR8.
+    for refcol in ["REF_CAT", "REF_EPOCH"]:
+        if refcol in objects.dtype.names:
+            gfas[refcol] = objects[refcol]
 
-    #ADM cut the GFAs by a hard limit on magnitude
-    w = np.where(gfas['GAIA_PHOT_G_MEAN_MAG'] < maglim)[0]
-    gfas = gfas[w]
-    
-    #ADM a final clean-up to remove columns that are Nan
-    for col in ["PMRA","PMDEC"]:
-        w = np.where(~np.isnan(gfas[col]))[0]
-        gfas = gfas[w]
-#    log.info('Removed {} Gaia objects with NaN columns...t = {:.1f}s'
-#             .format(len(objects)-len(gfas),time()-start))
+    # ADM cut the GFAs by a hard limit on magnitude.
+    ii = gfas['GAIA_PHOT_G_MEAN_MAG'] < maglim
+    gfas = gfas[ii]
+
+    # ADM remove any sources based on LSLGA (retain Tycho/T2 sources).
+    ii = (gfas["REF_CAT"] == b'L2') | (gfas["REF_CAT"] == 'L2')
+
+    gfas = gfas[~ii]
 
     return gfas
 
 
-def decode_sweep_name(sweepname):
-    """Retrieve RA/Dec edges from a full directory path to a sweep file
-    
+def gaia_in_file(infile, maglim=18, mindec=-30., mingalb=10.,
+                 nside=None, pixlist=None, addobjid=False):
+    """Retrieve the Gaia objects from a HEALPixel-split Gaia file.
+
     Parameters
     ----------
-    sweepname : :class:`str`
-        Full path to a sweep file, e.g., /a/b/c/sweep-350m005-360p005.fits
+    infile : :class:`str`
+        File name of a single Gaia "healpix" file.
+    maglim : :class:`float`, optional, defaults to 18
+        Magnitude limit for GFAs in Gaia G-band.
+    mindec : :class:`float`, optional, defaults to -30
+        Minimum declination (o) to include for output Gaia objects.
+    mingalb : :class:`float`, optional, defaults to 10
+        Closest latitude to Galactic plane for output Gaia objects
+        (e.g. send 10 to limit to areas beyond -10o <= b < 10o)"
+    nside : :class:`int`, optional, defaults to `None`
+        (NESTED) HEALPix `nside` to use with `pixlist`.
+    pixlist : :class:`list` or `int`, optional, defaults to `None`
+        Only return sources in a set of (NESTED) HEALpixels at the
+        supplied `nside`.
+    addobjid : :class:`bool`, optional, defaults to ``False``
+        If ``True``, include, in the output, a column "GAIA_OBJID"
+        that is the integer number of each row read from file.
 
     Returns
     -------
-    :class:`list`
-        A 4-entry list of the edges of the region covered by the sweeps file
-        in the form [RAmin, RAmax, DECmin, DECmax]
-        For the above example this would be [350., 360., -5., 5.]
+    :class:`~numpy.ndarray`
+        Gaia objects in the passed Gaia file brighter than `maglim`,
+        formatted according to `desitarget.gfa.gfadatamodel`.
+
+    Notes
+    -----
+       - A "Gaia healpix file" here is as made by, e.g.
+         :func:`~desitarget.gaiamatch.gaia_fits_to_healpix()`
     """
-    #ADM extract just the file part of the name
-    sweepname = os.path.basename(sweepname)
-    
-    #ADM the RA/Dec edges
-    ramin, ramax = float(sweepname[6:9]), float(sweepname[14:17])
-    decmin, decmax = float(sweepname[10:13]), float(sweepname[18:21])
+    # ADM read in the Gaia file and limit to the passed magnitude.
+    objs = read_gaia_file(infile, addobjid=addobjid)
+    ii = objs['GAIA_PHOT_G_MEAN_MAG'] < maglim
+    objs = objs[ii]
 
-    #ADM flip the signs on the DECs, if needed
-    if sweepname[9] == 'm':
-        decmin *= -1
-    if sweepname[17] == 'm':
-        decmax *= -1
-    
-    return [ramin,ramax,decmin,decmax]
+    # ADM rename GAIA_RA/DEC to RA/DEC, as that's what's used for GFAs.
+    for radec in ["RA", "DEC"]:
+        objs.dtype.names = [radec if col == "GAIA_"+radec else col
+                            for col in objs.dtype.names]
+
+    # ADM initiate the GFA data model.
+    dt = gfadatamodel.dtype.descr
+    if addobjid:
+        for tup in ('GAIA_BRICKID', '>i4'), ('GAIA_OBJID', '>i4'):
+            dt.append(tup)
+
+    gfas = np.zeros(len(objs), dtype=dt)
+    # ADM make sure all columns initially have "ridiculous" numbers
+    gfas[...] = -99.
+    for col in gfas.dtype.names:
+        if isinstance(gfas[col][0].item(), (bytes, str)):
+            gfas[col] = 'U'
+        if isinstance(gfas[col][0].item(), int):
+            gfas[col] = -1
+    # ADM some default special cases. Default to REF_EPOCH of Gaia DR2,
+    # ADM make RA/Dec very precise for Gaia measurements.
+    gfas["REF_EPOCH"] = 2015.5
+    gfas["RA_IVAR"], gfas["DEC_IVAR"] = 1e16, 1e16
+
+    # ADM populate the common columns in the Gaia/GFA data models.
+    cols = set(gfas.dtype.names).intersection(set(objs.dtype.names))
+    for col in cols:
+        gfas[col] = objs[col]
+
+    # ADM update the Gaia morphological type.
+    gfas["TYPE"] = gaia_morph(gfas)
+
+    # ADM populate the BRICKID columns.
+    gfas["BRICKID"] = bricks.brickid(gfas["RA"], gfas["DEC"])
+
+    # ADM limit by HEALPixel first as that's the fastest.
+    if pixlist is not None:
+        inhp = is_in_hp(gfas, nside, pixlist)
+        gfas = gfas[inhp]
+    # ADM limit by Dec first to speed transform to Galactic coordinates.
+    decgood = is_in_box(gfas, [0., 360., mindec, 90.])
+    gfas = gfas[decgood]
+    # ADM now limit to requesed Galactic latitude range.
+    if mingalb > 1e-9:
+        bbad = is_in_gal_box(gfas, [0., 360., -mingalb, mingalb])
+        gfas = gfas[~bbad]
+
+    return gfas
 
 
-def select_gfas(infiles, maglim=18, numproc=4,
-            gaiadir='/project/projectdirs/cosmo/work/gaia/chunks-gaia-dr2-astrom'):
-    """Create a set of GFA locations using Gaia
+def all_gaia_in_tiles(maglim=18, numproc=4, allsky=False,
+                      tiles=None, mindec=-30, mingalb=10,
+                      nside=None, pixlist=None, addobjid=False):
+    """An array of all Gaia objects in the DESI tiling footprint
+
+    Parameters
+    ----------
+    maglim : :class:`float`, optional, defaults to 18
+        Magnitude limit for GFAs in Gaia G-band.
+    numproc : :class:`int`, optional, defaults to 4
+        The number of parallel processes to use.
+    allsky : :class:`bool`,  defaults to ``False``
+        If ``True``, assume that the DESI tiling footprint is the
+        entire sky regardless of the value of `tiles`.
+    tiles : :class:`~numpy.ndarray`, optional, defaults to ``None``
+        Array of DESI tiles. If None, then load the entire footprint.
+    mindec : :class:`float`, optional, defaults to -30
+        Minimum declination (o) to include for output Gaia objects.
+    mingalb : :class:`float`, optional, defaults to 10
+        Closest latitude to Galactic plane for output Gaia objects
+        (e.g. send 10 to limit to areas beyond -10o <= b < 10o).
+    nside : :class:`int`, optional, defaults to `None`
+        (NESTED) HEALPix `nside` to use with `pixlist`.
+    pixlist : :class:`list` or `int`, optional, defaults to `None`
+        Only return sources in a set of (NESTED) HEALpixels at the
+        supplied `nside`.
+    addobjid : :class:`bool`, optional, defaults to ``False``
+        If ``True``, include, in the output, a column "GAIA_OBJID"
+        that is the integer number of each row read from each Gaia file.
+
+    Returns
+    -------
+    :class:`~numpy.ndarray`
+        Gaia objects within the passed geometric constraints brighter
+        than `maglim`, formatted like `desitarget.gfa.gfadatamodel`.
+
+    Notes
+    -----
+       - The environment variables $GAIA_DIR and $DESIMODEL must be set.
+    """
+    # ADM grab paths to Gaia files in the sky or the DESI footprint.
+    if allsky:
+        infilesbox = find_gaia_files_box([0, 360, mindec, 90])
+        infilesgalb = find_gaia_files_beyond_gal_b(mingalb)
+        infiles = list(set(infilesbox).intersection(set(infilesgalb)))
+        if pixlist is not None:
+            infileshp = find_gaia_files_hp(nside, pixlist, neighbors=False)
+            infiles = list(set(infiles).intersection(set(infileshp)))
+    else:
+        infiles = find_gaia_files_tiles(tiles=tiles, neighbors=False)
+    nfiles = len(infiles)
+
+    # ADM the critical function to run on every file.
+    def _get_gaia_gfas(fn):
+        '''wrapper on gaia_in_file() given a file name'''
+        return gaia_in_file(fn, maglim=maglim, mindec=mindec, mingalb=mingalb,
+                            nside=nside, pixlist=pixlist, addobjid=addobjid)
+
+    # ADM this is just to count sweeps files in _update_status.
+    nfile = np.zeros((), dtype='i8')
+    t0 = time()
+
+    def _update_status(result):
+        """wrapper function for the critical reduction operation,
+        that occurs on the main parallel process"""
+        if nfile % 100 == 0 and nfile > 0:
+            elapsed = (time()-t0)/60.
+            rate = nfile/elapsed/60.
+            log.info('{}/{} files; {:.1f} files/sec...t = {:.1f} mins'
+                     .format(nfile, nfiles, rate, elapsed))
+        nfile[...] += 1    # this is an in-place modification.
+        return result
+
+    # - Parallel process Gaia files.
+    if numproc > 1:
+        pool = sharedmem.MapReduce(np=numproc)
+        with pool:
+            gfas = pool.map(_get_gaia_gfas, infiles, reduce=_update_status)
+    else:
+        gfas = list()
+        for file in infiles:
+            gfas.append(_update_status(_get_gaia_gfas(file)))
+
+    gfas = np.concatenate(gfas)
+
+    log.info('Retrieved {} Gaia objects...t = {:.1f} mins'
+             .format(len(gfas), (time()-t0)/60.))
+
+    return gfas
+
+
+def add_urat_pms(objs, numproc=4):
+    """Add proper motions from URAT to a set of objects.
+
+    Parameters
+    ----------
+    objs : :class:`~numpy.ndarray`
+        Array of objects to update. Must include the columns "PMRA",
+        "PMDEC", "REF_ID" (unique per object) "URAT_ID" and "URAT_SEP".
+    numproc : :class:`int`, optional, defaults to 4
+        The number of parallel processes to use.
+
+    Returns
+    -------
+    :class:`~numpy.ndarray`
+        The input array with the "PMRA", PMDEC", "URAT_ID" and "URAT_SEP"
+        columns updated to include URAT information.
+
+    Notes
+    -----
+       - Order is retained using "REF_ID": The input and output
+         arrays should have the same order.
+    """
+    # ADM check REF_ID is indeed unique for each object.
+    assert len(objs["REF_ID"]) == len(np.unique(objs["REF_ID"]))
+
+    # ADM record the original REF_IDs so we can match back to them.
+    origids = objs["REF_ID"]
+
+    # ADM loosely group the input objects on the sky. NSIDE=16 seems
+    # ADM to nicely balance sample sizes for matching, with the code
+    # ADM being quicker for clumped objects because of file I/O.
+    theta, phi = np.radians(90-objs["DEC"]), np.radians(objs["RA"])
+    pixels = hp.ang2pix(16, theta, phi, nest=True)
+
+    # ADM reorder objects (and pixels themselves) based on pixel number.
+    ii = np.argsort(pixels)
+    objs, pixels = objs[ii], pixels[ii]
+
+    # ADM create pixel-split sub-lists of the objects.
+    # ADM here, np.diff marks the transition to the next pixel number.
+    splitobjs = np.split(objs, np.where(np.diff(pixels))[0]+1)
+    nallpix = len(splitobjs)
+
+    # ADM function to run on each of the HEALPix-split input objs.
+    def _get_urat_matches(splitobj):
+        '''wrapper on match_to_urat() for rec array (matchrad=0.5")'''
+        # ADM also return the REF_ID to track the objects.
+        return [match_to_urat(splitobj, matchrad=0.5), splitobj["REF_ID"]]
+
+    # ADM this is just to count pixels in _update_status.
+    npix = np.zeros((), dtype='i8')
+    t0 = time()
+
+    def _update_status(result):
+        """wrapper function for the critical reduction operation,
+        that occurs on the main parallel process"""
+        if npix % 200 == 0 and npix > 0:
+            elapsed = (time()-t0)/60.
+            rate = npix/elapsed/60.
+            log.info('{}/{} pixels; {:.1f} pix/sec...t = {:.1f} mins'
+                     .format(npix, nallpix, rate, elapsed))
+        npix[...] += 1    # this is an in-place modification.
+        return result
+
+    # - Parallel process pixels.
+    if numproc > 1:
+        pool = sharedmem.MapReduce(np=numproc)
+        with pool:
+            urats = pool.map(_get_urat_matches, splitobjs, reduce=_update_status)
+    else:
+        urats = []
+        for splitobj in splitobjs:
+            urats.append(_update_status(_get_urat_matches(splitobj)))
+
+    # ADM remember to grab the REFIDs as well as the URAT matches.
+    refids = np.concatenate(np.array(urats)[:, 1])
+    urats = np.concatenate(np.array(urats)[:, 0])
+
+    # ADM sort the output to match the input, on REF_ID.
+    ii = np.zeros_like(refids)
+    ii[np.argsort(origids)] = np.argsort(refids)
+    assert np.all(refids[ii] == origids)
+
+    return urats[ii]
+
+
+def select_gfas(infiles, maglim=18, numproc=4, nside=None,
+                pixlist=None, bundlefiles=None, extra=None,
+                mindec=-30, mingalb=10, addurat=True):
+    """Create a set of GFA locations using Gaia and matching to sweeps.
 
     Parameters
     ----------
@@ -372,65 +436,159 @@ def select_gfas(infiles, maglim=18, numproc=4,
         Magnitude limit for GFAs in Gaia G-band.
     numproc : :class:`int`, optional, defaults to 4
         The number of parallel processes to use.
-    gaiadir : :class:`str`, optional, defaults to Gaia DR2 path at NERSC
-        Root directory of a Gaia Data Release as used by the Legacy Surveys.
+    nside : :class:`int`, optional, defaults to `None`
+        (NESTED) HEALPix `nside` to use with `pixlist` and `bundlefiles`.
+    pixlist : :class:`list` or `int`, optional, defaults to `None`
+        Only return targets in a set of (NESTED) HEALpixels at the
+        supplied `nside`. Useful for parallelizing.
+    bundlefiles : :class:`int`, defaults to `None`
+        If not `None`, then, instead of selecting gfas, print the slurm
+        script to run in pixels at `nside`. Is an integer rather than
+        a boolean for historical reasons.
+    extra : :class:`str`, optional
+        Extra command line flags to be passed to the executable lines in
+        the output slurm script. Used in conjunction with `bundlefiles`.
+    mindec : :class:`float`, optional, defaults to -30
+        Minimum declination (o) for output sources that do NOT match
+        an object in the passed `infiles`.
+    mingalb : :class:`float`, optional, defaults to 10
+        Closest latitude to Galactic plane for output sources that
+        do NOT match an object in the passed `infiles` (e.g. send
+        10 to limit to regions beyond -10o <= b < 10o)".
+    addurat : :class:`bool`, optional, defaults to ``True``
+        If ``True`` then substitute proper motions from the URAT
+        catalog where Gaia is missing proper motions. Requires that
+        the :envvar:`URAT_DIR` is set and points to data downloaded and
+        formatted by, e.g., :func:`~desitarget.uratmatch.make_urat_files`.
 
     Returns
     -------
-    :class:`numpy.ndarray`
-        GFA objects from Gaia across all of the passed input files, formatted 
-        according to `desitarget.gfa.gfadatamodel`.
-    
+    :class:`~numpy.ndarray`
+        GFA objects from Gaia with the passed geometric constraints
+        limited to the passed maglim and matched to the passed input
+        files, formatted according to `desitarget.gfa.gfadatamodel`.
+
     Notes
     -----
-        - if numproc==1, use the serial code instead of the parallel code.
+        - If numproc==1, use the serial code instead of parallel code.
+        - If numproc > 4, then numproc=4 is enforced for (just those)
+          parts of the code that are I/O limited.
     """
+    # ADM the code can have memory issues for nside=2 with large numproc.
+    if nside is not None and nside < 4 and numproc > 8:
+        msg = 'Memory may be an issue near Plane for nside < 4 and numproc > 8'
+        log.warning(msg)
 
-    #ADM convert a single file, if passed to a list of files
-    if isinstance(infiles,str):
-        infiles = [infiles,]
+    # ADM force to no more than numproc=4 for I/O limited processes.
+    numproc4 = numproc
+    if numproc4 > 4:
+        log.info('Forcing numproc to 4 for I/O limited parts of code')
+        numproc4 = 4
 
-    #ADM check that files exist before proceeding
+    # ADM convert a single file, if passed to a list of files.
+    if isinstance(infiles, str):
+        infiles = [infiles, ]
+
+    # ADM check that files exist before proceeding.
     for filename in infiles:
         if not os.path.exists(filename):
-            raise ValueError("{} doesn't exist".format(filename))
+            msg = "{} doesn't exist".format(filename)
+            log.critical(msg)
+            raise ValueError(msg)
 
+    # ADM if the pixlist option was sent, we'll need to
+    # ADM know which HEALPixels touch each file.
+    if pixlist is not None:
+        filesperpixel, _, _ = sweep_files_touch_hp(
+            nside, pixlist, infiles)
+
+    # ADM if the bundlefiles option was sent, call the packing code.
+    if bundlefiles is not None:
+        # ADM were files from one or two input directories passed?
+        surveydirs = list(set([os.path.dirname(fn) for fn in infiles]))
+        bundle_bricks([0], bundlefiles, nside, gather=False,
+                      prefix='gfas', surveydirs=surveydirs, extra=extra)
+        return
+
+    # ADM restrict to input files in a set of HEALPixels, if requested.
+    if pixlist is not None:
+        infiles = list(set(np.hstack([filesperpixel[pix] for pix in pixlist])))
+        if len(infiles) == 0:
+            log.info('ZERO sweep files in passed pixel list!!!')
+        log.info("Processing files in (nside={}, pixel numbers={}) HEALPixels"
+                 .format(nside, pixlist))
     nfiles = len(infiles)
 
-    #ADM the critical function to run on every file
+    # ADM a little more information if we're slurming across nodes.
+    if os.getenv('SLURMD_NODENAME') is not None:
+        log.info('Running on Node {}'.format(os.getenv('SLURMD_NODENAME')))
+
+    # ADM the critical function to run on every file.
     def _get_gfas(fn):
         '''wrapper on gaia_gfas_from_sweep() given a file name'''
-        #ADM we need to pass the boundaries of the sweeps file, too
-        bounds = decode_sweep_name(fn)
+        return gaia_gfas_from_sweep(fn, maglim=maglim)
 
-        return gaia_gfas_from_sweep(fn, maglim=maglim, 
-                                    gaiadir=gaiadir, gaiabounds=bounds)
-
-    #ADM this is just to count sweeps files in _update_status 
+    # ADM this is just to count sweeps files in _update_status.
+    t0 = time()
     nfile = np.zeros((), dtype='i8')
 
-    t0 = time()
     def _update_status(result):
-        ''' wrapper function for the critical reduction operation,
-            that occurs on the main parallel process '''
-        if nfile%50 == 0 and nfile>0:
-            rate = nfile / (time() - t0)
-            log.info('{}/{} files; {:.1f} files/sec'.format(nfile, nfiles, rate))
-        nfile[...] += 1    # this is an in-place modification
+        """wrapper function for the critical reduction operation,
+        that occurs on the main parallel process"""
+        if nfile % 20 == 0 and nfile > 0:
+            elapsed = (time()-t0)/60.
+            rate = nfile/elapsed/60.
+            log.info('{}/{} files; {:.1f} files/sec...t = {:.1f} mins'
+                     .format(nfile, nfiles, rate, elapsed))
+        nfile[...] += 1    # this is an in-place modification.
         return result
 
-    #- Parallel process input files
-    if numproc > 1:
-        pool = sharedmem.MapReduce(np=numproc)
-        with pool:
-            gfas = pool.map(_get_gfas, infiles, reduce=_update_status)
-    else:
-        gfas = list()
-        for file in infiles:
-            gfas.append(_update_status(_get_gfas(file)))
+    # - Parallel process input files.
+    if len(infiles) > 0:
+        if numproc4 > 1:
+            pool = sharedmem.MapReduce(np=numproc4)
+            with pool:
+                gfas = pool.map(_get_gfas, infiles, reduce=_update_status)
+        else:
+            gfas = list()
+            for file in infiles:
+                gfas.append(_update_status(_get_gfas(file)))
+        gfas = np.concatenate(gfas)
+        # ADM resolve any duplicates between imaging data releases.
+        gfas = resolve(gfas)
 
-    gfas = np.concatenate(gfas)
+    # ADM retrieve Gaia objects in the DESI footprint or passed tiles.
+    log.info('Retrieving additional Gaia objects...t = {:.1f} mins'
+             .format((time()-t0)/60))
+    gaia = all_gaia_in_tiles(maglim=maglim, numproc=numproc4, allsky=True,
+                             mindec=mindec, mingalb=mingalb,
+                             nside=nside, pixlist=pixlist)
+
+    # ADM remove any duplicates. Order is important here, as np.unique
+    # ADM keeps the first occurence, and we want to retain sweeps
+    # ADM information as much as possible.
+    if len(infiles) > 0:
+        gfas = np.concatenate([gfas, gaia])
+        _, ind = np.unique(gfas["REF_ID"], return_index=True)
+        gfas = gfas[ind]
+    else:
+        gfas = gaia
+
+    # ADM for zero/NaN proper motion objects, add URAT proper motions.
+    if addurat:
+        ii = ((np.isnan(gfas["PMRA"]) | (gfas["PMRA"] == 0)) &
+              (np.isnan(gfas["PMDEC"]) | (gfas["PMDEC"] == 0)))
+        log.info('Adding URAT for {} objects with no PMs...t = {:.1f} mins'
+                 .format(np.sum(ii), (time()-t0)/60))
+        urat = add_urat_pms(gfas[ii], numproc=numproc)
+        log.info('Found an additional {} URAT objects...t = {:.1f} mins'
+                 .format(np.sum(urat["URAT_ID"] != -1), (time()-t0)/60))
+        for col in "PMRA", "PMDEC", "URAT_ID", "URAT_SEP":
+            gfas[col][ii] = urat[col]
+
+    # ADM restrict to only GFAs in a set of HEALPixels, if requested.
+    if pixlist is not None:
+        ii = is_in_hp(gfas, nside, pixlist)
+        gfas = gfas[ii]
 
     return gfas
-
-

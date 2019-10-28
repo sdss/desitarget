@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+from __future__ import print_function, division
+
+import os, sys
+import numpy as np
+from time import time
+start = time()
+
+from desitarget import io
+from desitarget.randoms import pixweight, select_randoms
+from glob import iglob
+import fitsio
+
+#import warnings
+#warnings.simplefilter('error')
+
+import multiprocessing
+nproc = multiprocessing.cpu_count() // 2
+# ADM default HEALPix Nside used throughout desitarget.
+# ADM don't confuse this with the ns.nside parallelization input that is parsed below!!!
+nside = io.desitarget_nside()
+
+from desiutil.log import get_logger
+log = get_logger()
+
+from argparse import ArgumentParser
+ap = ArgumentParser(description='Generate pixel-level random points and associated information from a Data Release of the Legacy Surveys')
+ap.add_argument("surveydir", 
+                help='Legacy Surveys Data Release root directory (e.g. /global/project/projectdirs/cosmo/data/legacysurvey/dr4/ for DR4 at NERSC)')
+ap.add_argument("dest", 
+                help='Output file name to write random points (e.g. /project/projectdirs/desi/target/catalogs/randoms-dr4-0.20.0.fits)')
+ap.add_argument("--density", type=int,
+                help='Number of points per sq. deg. at which to Monte Carlo the imaging masks (defaults to 100,000)',
+                default="100000")
+ap.add_argument("--numproc", type=int,
+                help='number of concurrent processes to use [{}]'.format(nproc),
+                default=nproc)
+ap.add_argument('--nside', type=int,
+                help='Process random points in parallel in bricks that have centers within HEALPixels at this resolution (defaults to 4)',
+                default=4)
+ap.add_argument('--healpixels',
+                help='HEALPixels (corresponding to nside) to process (e.g. "6,21,57"). If not passed, run all bricks in the Data Release',
+                default=None)
+ap.add_argument("--bundlebricks", type=int,
+                help="(overrides all options but surveydir) Print a slurm script to parallelize, with about this many bricks per HEALPixel (e.g. 10000)",
+                default=None)
+ap.add_argument("--brickspersec", type=float,
+                help="estimate of bricks completed per second by the (parallelized) code. Used with `bundlebricks` to guess run times (defaults to 2.5)",
+                default=2.5)
+ap.add_argument("--dustdir",
+                help="Directory of SFD dust maps (defaults to the equivalent of $DUST_DIR+'/maps')",
+                default=None)
+ap.add_argument("--noresolve", action='store_true',
+                help="Do NOT resolve into northern randoms in northern regions and southern randoms in southern regions")
+ap.add_argument("--aprad", type=float,
+                help="Radius of aperture in arcsec in which to generate sky background flux levels (defaults to 0.75; the DESI fiber radius)",
+                default=0.75)
+
+ns = ap.parse_args()
+# ADM build the list of command line arguments as
+# ADM bundlefiles potentially needs to know about them.
+extra = " --numproc {}".format(ns.numproc)
+nsdict = vars(ns)
+for nskey in "noresolve", "aprad":
+    if isinstance(nsdict[nskey], bool):
+        if nsdict[nskey]:
+            extra += " --{}".format(nskey)
+    else:
+        extra += " --{} {}".format(nskey, nsdict[nskey])
+
+# ADM parse the list of HEALPixels in which to run.
+pixlist = ns.healpixels
+if pixlist is not None:
+    pixlist = [ int(pixnum) for pixnum in pixlist.split(',') ]
+
+if not os.path.exists(ns.surveydir):
+    log.critical('Input directory does not exist: {}'.format(ns.surveydir))
+    sys.exit(1)
+
+if ns.bundlebricks is None:
+    log.info('running on {} processors...t = {:.1f}s'.format(ns.numproc, time()-start))
+
+# ADM go looking for a maskbits file to steal the header for the
+# ADM bit names. Try a couple of configurations (pre/post DR8).
+hdr = None
+if not 'dr5' in ns.surveydir and not 'dr6' in ns.surveydir:
+    gen = iglob(os.path.join(ns.surveydir, "*", "coadd", "*", "*", "*maskbits*"))
+    try:
+        fn = next(gen)
+        hdrall = fitsio.read_header(fn, 1)
+    except StopIteration:
+        gen = iglob(os.path.join(ns.surveydir, "coadd", "*", "*", "*maskbits*"))
+        fn = next(gen)
+        hdrall = fitsio.read_header(fn, 0)
+    # ADM retrieve the record dictionary for the entire header.
+    rmhdr = vars(hdrall)
+    # ADM write only the maskbits-relevant headers to a new header.
+    hdr = fitsio.FITSHDR()
+    for record in rmhdr['_record_map']:
+        if 'BITNM' in record:
+            hdr[record] = rmhdr['_record_map'][record]
+
+randoms = select_randoms(ns.surveydir, density=ns.density, numproc=ns.numproc,
+                         nside=ns.nside, pixlist=pixlist, aprad=ns.aprad, extra=extra,
+                         bundlebricks=ns.bundlebricks, brickspersec=ns.brickspersec,
+                         dustdir=ns.dustdir, resolverands=not(ns.noresolve))
+
+if ns.bundlebricks is None:
+    io.write_randoms(ns.dest, randoms, indir=ns.surveydir, aprad=ns.aprad,
+                     hdr=hdr, nside=nside, density=ns.density, resolve=not(ns.noresolve))
+    log.info('wrote file of {} randoms to {}...t = {:.1f}s'
+             .format(len(randoms), ns.dest,time()-start))

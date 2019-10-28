@@ -1,0 +1,183 @@
+#- commissioning (cmx) primary survey targets bit mask:
+cmx_mask:
+
+    - [STD_GAIA,        0, "Gaia stars used for dithering tests", {obsconditions: DARK|GRAY|BRIGHT}]
+    - [SV0_STD_FAINT,   1, "SV-like STD_FAINT class is set (very early SV selection)", {obsconditions: DARK|GRAY}]
+    - [SV0_STD_BRIGHT,  2, "SV-like STD_BRIGHT class is set (very early SV selection)", {obsconditions: BRIGHT}]
+    - [STD_TEST,        3, "Very bright stars for early tests", {obsconditions: DARK|GRAY|BRIGHT}]
+    - [STD_CALSPEC,     4, "Matches to CALSPEC stars", {obsconditions: DARK|GRAY|BRIGHT}]
+
+    # ADM targeting bits that should resemble at least the initial SV selections ("SV0").
+    - [SV0_BGS,         8, "SV-like BGS bit is set (very early SV selection)", {obsconditions: BRIGHT}]
+    - [SV0_MWS,         9, "SV-like MWS bit is set (very early SV selection)", {obsconditions: BRIGHT}]
+    - [SV0_LRG,        10, "SV-like LRG bit is set (very early SV selection)", {obsconditions: DARK}]
+    - [SV0_ELG,        11, "SV-like ELG bit is set (very early SV selection)", {obsconditions: DARK|GRAY}]
+    - [SV0_QSO,        12, "SV-like QSO bit is set (very early SV/RF selection)", {obsconditions: DARK}]
+    - [SV0_WD,         13, "SV-like WD bit is set (very early MWS_WD selection)", {obsconditions: BRIGHT}]
+
+    # ADM back-up targets for poor conditions.
+    - [BACKUP_BRIGHT,  16, "Bright Gaia targets for poor conditions",  {obsconditions: POOR|TWILIGHT12|TWILIGHT18}]
+    - [BACKUP_FAINT,   17, "Fainter Gaia targets for poor conditions",  {obsconditions: POOR|TWILIGHT12|TWILIGHT18}]
+
+    # ADM first light targets.
+    - [M31_STD_BRIGHT, 18, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_H2PN,       19, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_GC,         20, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_QSO,        21, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_VAR,        22, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_BSPL,       23, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_M31cen,     24, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M31_M31out,     25, "M31 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ORI_STD_BRIGHT, 26, "Orion first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ORI_QSO,        27, "Orion first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ORI_ORI,        28, "Orion first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ORI_HA,         29, "Orion first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ROS_STD_BRIGHT, 30, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ROS_QSO,        31, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- ADM leave 32-37 reserved for calibration targets (to mirror the main survey)
+
+    - [ROS_ROSM17,     38, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ROS_ROS1,       39, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ROS_HA,         40, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [ROS_ROS2,       41, "Rosette first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_STD_BRIGHT, 42, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_H2PN,       43, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_GC,         44, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_QSO,        45, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_M33cen,     46, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [M33_M33out,     47, "M33 first light program", {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- ADM retain bits 49-52 for masking/convenience (to mirror the main survey)
+
+    #- Calibration targets. Shared between main/cmx/sv programs.
+    - [SKY,         32, "Blank sky locations",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [STD_FAINT,   33, "SV-like standard stars for dark/gray conditions", {obsconditions: DARK|GRAY}]
+    - [STD_BRIGHT,  35, "SV-like standard stars for BRIGHT conditions", {obsconditions: BRIGHT}]
+    - [BAD_SKY,     36, "Blank sky locations that are imperfect but still useable",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [SUPP_SKY,      37, "SKY is based on Gaia-avoidance (SKY will be set, too)",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+#- Observation State
+#- if a target passes more than one target bit, it is possible that one bit
+#- will consider the observations "DONE" while another bit will want "MORE".
+#- DONOTOBSERVE trumps MORE which trumps DONE
+#- ADM It's possible that we'll want different obsmask criteria compared
+#- ADM to the obsmask in targetmask.yaml for the main survey
+#- ADM (but it's unlikely we'll want different *obsconditions* or *targetids*
+cmx_obsmask:
+    - [UNOBS,       0, "unobserved"]
+    - [OBS,         1, "observed but no spectro pipeline answer yet"]
+    - [DONE,        2, "enough observations already obtained"]
+    - [MORE_ZWARN,  3, "ambiguous redshift; need more observations"]
+    - [MORE_ZGOOD,  4, "redshift known; need more observations"]
+    - [DONOTOBSERVE,  16, "Do not observe this target (possibly temporarily)"]
+
+#- Priorities for each target bit
+#- Numerically larger priorities are higher priority to be observed first.
+#- NOTE: these aren't a bitmask, they are a mapping from bit -> priority
+#- SAME_AS_XXX means to use the priorities for bitname XXX
+#- -1 means the concept of priority doesn't really apply to this target class
+#- Every target bit must define priority for "UNOBS"
+#- Default priority for "MORE_ZGOOD" is same as "UNOBS"
+#- Other states are default 1 unless specified here
+#- -1 means that the concept of priority doesn't apply to this bit
+priorities:
+    cmx_mask:
+        # ADM STD_GAIA should have the lowest UNOBS and be a few 100 from the
+        # ADM next class at the upper end, as this target class is
+        # ADM prioritized from 100 higher to ~400 lower on UNOBS by magnitude.
+        STD_GAIA: {UNOBS: 2400, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_STD_FAINT: {UNOBS: 2600, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_STD_BRIGHT: {UNOBS: 2600, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        STD_TEST: {UNOBS: 2800, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        STD_CALSPEC: {UNOBS: 3000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_BGS: {UNOBS: 2100, MORE_ZWARN: 2100, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_MWS: {UNOBS: 1500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_ELG: {UNOBS: 3000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_LRG: {UNOBS: 3200, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_QSO: {UNOBS: 3400, MORE_ZGOOD: 3500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        SV0_WD: {UNOBS: 2998, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BACKUP_BRIGHT: {UNOBS: 10, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        BACKUP_FAINT: {UNOBS: 10, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_STD_BRIGHT: {UNOBS: 1008, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_H2PN: {UNOBS: 1007, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_GC: {UNOBS: 1006, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_QSO: {UNOBS: 1005, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_VAR: {UNOBS: 1004, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_BSPL: {UNOBS: 1003, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_M31cen: {UNOBS: 1002, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M31_M31out: {UNOBS: 1001, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ORI_STD_BRIGHT: {UNOBS: 1008, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ORI_QSO: {UNOBS: 1005, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ORI_ORI: {UNOBS: 1003, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ORI_HA: {UNOBS: 1002, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_STD_BRIGHT: {UNOBS: 1008, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_QSO: {UNOBS: 1005, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_ROSM17: {UNOBS: 1004, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_ROS1: {UNOBS: 1003, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_HA: {UNOBS: 1002, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        ROS_ROS2: {UNOBS: 1001, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_STD_BRIGHT: {UNOBS: 1008, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_H2PN: {UNOBS: 1007, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_GC: {UNOBS: 1006, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_QSO: {UNOBS: 1005, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_M33cen: {UNOBS: 1002, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        M33_M33out: {UNOBS: 1001, DONE: 10, OBS: 10, DONOTOBSERVE: 0}
+        BAD_SKY: {UNOBS: 0, OBS: 0, DONE: 0, MORE_ZWARN: 0, MORE_ZGOOD: 0}
+        #- Standards and sky are treated specially; priorities don't apply
+        STD_FAINT:  -1
+        SKY:        -1
+        SUPP_SKY:   -1
+        STD_BRIGHT: -1
+
+# ADM INITIAL number of observations (NUMOBS) for each target bit
+# ADM SAME_AS_XXX means to use the NUMOBS for bitname XXX
+# ADM -1 means that the concept of NUMOBS doesn't apply to this bit
+numobs:
+    cmx_mask:
+        STD_GAIA: 1
+        SV0_STD_FAINT: 1
+        SV0_STD_BRIGHT: 1
+        STD_TEST: 1
+        STD_CALSPEC: 1
+        SV0_BGS: 1
+        SV0_MWS: 1
+        SV0_ELG: 1
+        SV0_LRG: 2
+        SV0_QSO: 4
+        SV0_WD: 1
+        BACKUP_BRIGHT: 1
+        BACKUP_FAINT: 1
+        M31_STD_BRIGHT: 100
+        M31_H2PN: 100
+        M31_GC: 100
+        M31_QSO: 100
+        M31_VAR: 100
+        M31_BSPL: 100
+        M31_M31cen: 100
+        M31_M31out: 100
+        ORI_STD_BRIGHT: 100
+        ORI_QSO: 100
+        ORI_ORI: 100
+        ORI_HA: 100
+        ROS_STD_BRIGHT: 100
+        ROS_QSO: 100
+        ROS_ROSM17: 100
+        ROS_ROS1: 100
+        ROS_HA: 100
+        ROS_ROS2: 100
+        M33_STD_BRIGHT: 100
+        M33_H2PN: 100
+        M33_GC: 100
+        M33_QSO: 100
+        M33_M33cen: 100
+        M33_M33out: 100
+        BAD_SKY: 0
+        #- Standards and sky are treated specially; NUMOBS doesn't apply
+        STD_FAINT: -1
+        SKY: -1
+        SUPP_SKY: -1
+        STD_BRIGHT: -1

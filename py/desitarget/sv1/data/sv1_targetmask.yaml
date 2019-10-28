@@ -1,0 +1,428 @@
+#- SV primary survey targets bit mask: dark survey + calib + 
+sv1_desi_mask:
+    - [LRG,         0, "LRG", {obsconditions: DARK}]
+    - [ELG,         1, "ELG", {obsconditions: DARK|GRAY}]
+    - [QSO,         2, "QSO", {obsconditions: DARK}]
+    
+    #- ADM LRG sub-classes
+    - [LRG_INIT_4PASS,  3, "Bright LRG using initial optical and IR cuts",               {obsconditions: DARK}]
+    - [LRG_SUPER_4PASS, 4, "Bright LRG that is a superset of other cuts",                {obsconditions: DARK}]
+    - [LRG_INIT_8PASS,  5, "Faint LRG using initial optical and IR cuts",                {obsconditions: DARK}]
+    - [LRG_SUPER_8PASS, 6, "Faint LRG that is a superset of other cuts",                 {obsconditions: DARK}]
+    - [LOWZ_FILLER,     7, "LRG-like low-z filler sample (will NOT also have LRG set)",  {obsconditions: DARK}]
+
+    #- ADM ELG sub-classes
+    - [ELG_SV_GTOT,        8, "ELG from relaxed version of FDR cuts and g-limit",        {obsconditions: DARK|GRAY}]
+    - [ELG_SV_GFIB,        9, "ELG from relaxed version of FDR cuts and g-fiber-limit",  {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GTOT,      10, "ELG from FDR cuts with g-mag-limit",                      {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GFIB,      11, "ELG from FDR cuts with g-fiber-mag-limit",                {obsconditions: DARK|GRAY}]
+
+    #- ADM QSO sub-classes
+    - [QSO_COLOR_4PASS,   12, "Low-z (tracer) QSO using color cuts",          {obsconditions: DARK}]
+    - [QSO_RF_4PASS,      13, "Low-z (tracer) QSO using random forest",       {obsconditions: DARK}]
+    - [QSO_COLOR_8PASS,   14, "High-z (Lyman-Alpha) QSO using color cuts",    {obsconditions: DARK}]
+    - [QSO_RF_8PASS,      15, "High-z (Lyman-Alpha) QSO using random forest", {obsconditions: DARK}]
+    - [QSO_HZ_F,          16, "QSO at high-redshift and faint",               {obsconditions: DARK}]
+    - [QSO_Z5,            17, "z~5 QSO",                                      {obsconditions: DARK}]
+
+    #- North vs. South selections for different sub-classes
+    - [LRG_INIT_4PASS_NORTH,   18, "Bright LRG using initial optical and IR cuts tuned for Bok/Mosaic", {obsconditions: DARK}]
+    - [LRG_SUPER_4PASS_NORTH,  19, "Bright LRG that is a superset of other cuts tuned for Bok/Mosaic",  {obsconditions: DARK}]
+    - [LRG_INIT_8PASS_NORTH,   20, "Faint LRG using initial optical and IR cuts tuned for Bok/Mosaic",  {obsconditions: DARK}]
+    - [LRG_SUPER_8PASS_NORTH,  21, "Faint LRG that is a superset of other cuts tuned for Bok/Mosaic",   {obsconditions: DARK}]
+    - [LOWZ_FILLER_NORTH,      22, "LRG-like low-z filler sample tuned for Bok/Mosaic",                 {obsconditions: DARK}]
+
+    - [LRG_INIT_4PASS_SOUTH,   23, "Bright LRG using initial optical and IR cuts tuned for DECam", {obsconditions: DARK}]
+    - [LRG_SUPER_4PASS_SOUTH,  24, "Bright LRG that is a superset of other cuts tuned for DECam",  {obsconditions: DARK}]
+    - [LRG_INIT_8PASS_SOUTH,   25, "Faint LRG using initial optical and IR cuts tuned for DECam",  {obsconditions: DARK}]
+    - [LRG_SUPER_8PASS_SOUTH,  26, "Faint LRG that is a superset of other cuts tuned for DECam",   {obsconditions: DARK}]
+    - [LOWZ_FILLER_SOUTH,      27, "LRG-like low-z filler sample tuned for DECam",                 {obsconditions: DARK}]
+
+    - [ELG_SV_GTOT_NORTH,      28, "ELG from relaxed version of FDR cuts and g-limit for Bok/Mosaic",        {obsconditions: DARK|GRAY}]
+    - [ELG_SV_GFIB_NORTH,      29, "ELG from relaxed version of FDR cuts and g-fiber-limit for Bok/Mosaic",  {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GTOT_NORTH,     30, "ELG from FDR cuts with g-mag-limit for Bok/Mosaic",                      {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GFIB_NORTH,     31, "ELG from FDR cuts with g-fiber-mag-limit for Bok/Mosaic",                {obsconditions: DARK|GRAY}]
+
+    #- ADM leave 32-37 reserved for calibration targets (to mirror the main survey)
+
+    - [ELG_SV_GTOT_SOUTH,      38, "ELG from relaxed version of FDR cuts and g-limit for DECam",        {obsconditions: DARK|GRAY}]
+    - [ELG_SV_GFIB_SOUTH,      39, "ELG from relaxed version of FDR cuts and g-fiber-limit for DECam",  {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GTOT_SOUTH,     40, "ELG from FDR cuts with g-mag-limit for DECam",                      {obsconditions: DARK|GRAY}]
+    - [ELG_FDR_GFIB_SOUTH,     41, "ELG from FDR cuts with g-fiber-mag-limit for DECam",                {obsconditions: DARK|GRAY}]
+
+    - [QSO_COLOR_4PASS_NORTH, 42, "Low-z (tracer) QSO using color cuts tuned for Bok/Mosaic",          {obsconditions: DARK}]
+    - [QSO_RF_4PASS_NORTH,    43, "Low-z (tracer) QSO using random forest tuned for Bok/Mosaic",       {obsconditions: DARK}]
+    - [QSO_COLOR_8PASS_NORTH, 44, "High-z (Lyman-Alpha) QSO using color cuts tuned for Bok/Mosaic",    {obsconditions: DARK}]
+    - [QSO_RF_8PASS_NORTH,    45, "High-z (Lyman-Alpha) QSO using random forest tuned for Bok/Mosaic", {obsconditions: DARK}]
+    - [QSO_HZ_F_NORTH,        46, "QSO at high-redshift and faint tuned for Bok/Mosaic",               {obsconditions: DARK}]
+    - [QSO_Z5_NORTH,          47, "z~5 QSO tuned for Bok/Mosaic",                                      {obsconditions: DARK}]
+
+    - [QSO_COLOR_4PASS_SOUTH, 48, "Low-z (tracer) QSO using color cuts tuned for DECam",               {obsconditions: DARK}]
+
+    #- ADM retain bits 49-52 for masking/convenience (to mirror the main survey)
+
+    - [QSO_RF_4PASS_SOUTH,    53, "Low-z (tracer) QSO using random forest tuned for DECam",            {obsconditions: DARK}]
+    - [QSO_COLOR_8PASS_SOUTH, 54, "High-z (Lyman-Alpha) QSO using color cuts tuned for DECam",         {obsconditions: DARK}]
+    - [QSO_RF_8PASS_SOUTH,    55, "High-z (Lyman-Alpha) QSO using random forest tuned for DECam",      {obsconditions: DARK}]
+    - [QSO_HZ_F_SOUTH,        56, "QSO at high-redshift and faint tuned for DECam",                    {obsconditions: DARK}]
+    - [QSO_Z5_SOUTH,          57, "z~5 QSO tuned for DECam",                                           {obsconditions: DARK}]
+
+    #- Calibration targets
+    - [SKY,         32, "Blank sky locations",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [STD_FAINT,   33, "Standard stars for dark/gray conditions", {obsconditions: DARK|GRAY}]
+    - [STD_WD,      34, "White Dwarf stars", {obsconditions: DARK|GRAY|BRIGHT}]
+    - [STD_BRIGHT,  35, "Standard stars for BRIGHT conditions",
+        {obsconditions: BRIGHT}]
+    - [BAD_SKY,     36, "Blank sky locations that are imperfect but still useable",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [SUPP_SKY,    37, "SKY is based on Gaia-avoidance (SKY will be set, too)",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- Reserved convenience bits that can, e.g., be set downstream of desitarget
+    - [NO_TARGET,   49, "No known target at this location",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- Related to bright object masking
+    - [BRIGHT_OBJECT,       50, "Known bright object to avoid",             {obsconditions: APOCALYPSE}]
+    - [IN_BRIGHT_OBJECT,    51, "Too near a bright object; DO NOT OBSERVE", {obsconditions: APOCALYPSE}]
+    - [NEAR_BRIGHT_OBJECT,  52, "Near a bright object but ok to observe",
+            {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- A bit for another survey is set
+    - [BGS_ANY,             60, "Any BGS bit is set",  {obsconditions: BRIGHT}]
+    - [MWS_ANY,             61, "Any MWS bit is set",  {obsconditions: BRIGHT}]
+    - [SCND_ANY,            62, "Any secondary bit is set",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    
+#- Bright Galaxy Survey SV targets
+sv1_bgs_mask:
+    - [BGS_FAINT,           0, "BGS faint targets",              {obsconditions: BRIGHT|GRAY|DARK}]
+    - [BGS_BRIGHT,          1, "BGS bright targets",             {obsconditions: BRIGHT}]
+    - [BGS_FAINT_EXT,       2, "BGS faint extended targets",     {obsconditions: BRIGHT}]
+    - [BGS_LOWQ,            3, "BGS low quality targets",        {obsconditions: BRIGHT}]
+    - [BGS_FIBMAG,          4, "BGS fiber magnitude targets",    {obsconditions: BRIGHT}]
+
+    #- BGS North vs. South selections
+    - [BGS_FAINT_NORTH,     8, "BGS faint cuts tuned for Bok/Mosaic",           {obsconditions: BRIGHT}]
+    - [BGS_BRIGHT_NORTH,    9, "BGS bright cuts tuned for Bok/Mosaic",          {obsconditions: BRIGHT}]
+    - [BGS_FAINT_EXT_NORTH, 10, "BGS faint extended cuts tuned for Bok/Mosaic", {obsconditions: BRIGHT}]
+    - [BGS_LOWQ_NORTH,      11, "BGS low quality cuts tuned for Bok/Mosaic",    {obsconditions: BRIGHT}]
+    - [BGS_FIBMAG_NORTH,    12, "BGS low quality cuts tuned for Bok/Mosaic",    {obsconditions: BRIGHT}] 
+    - [BGS_FAINT_SOUTH,     16, "BGS faint cuts tuned for DECam",               {obsconditions: BRIGHT}]
+    - [BGS_BRIGHT_SOUTH,    17, "BGS bright cuts tuned for DECam",              {obsconditions: BRIGHT}]
+    - [BGS_FAINT_EXT_SOUTH, 18, "BGS faint extended cuts tuned for DECam",      {obsconditions: BRIGHT}]
+    - [BGS_LOWQ_SOUTH,      19, "BGS low quality cuts tuned for DECam",         {obsconditions: BRIGHT}]
+    - [BGS_FIBMAG_SOUTH,    20, "BGS fiber magnitude cuts tuned for DECam",     {obsconditions: BRIGHT}] 
+
+    - [BGS_KNOWN_ANY,       40, "Known target from another survey",    {obsconditions: BRIGHT}]
+    - [BGS_KNOWN_COLLIDED,  41, "BGS known SDSS/BOSS fiber collided",  {obsconditions: BRIGHT}]
+    - [BGS_KNOWN_SDSS,      42, "BGS known SDSS targets",              {obsconditions: BRIGHT}]
+    - [BGS_KNOWN_BOSS,      43, "BGS known BOSS targets",              {obsconditions: BRIGHT}]
+
+#- Milky Way Survey SV targets
+sv1_mws_mask:
+
+    # First layer defines main samples -- these are expected to have distinct
+    # input catalogues. 
+   
+    #- Bits 0-3 (7 ids)
+    - [MWS_MAIN,            0, "Milky Way Survey magnitude limited bulk sample",         {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_WD,              1, "Milky Way Survey White Dwarf",                           {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_NEARBY,          2, "Milky Way Survey volume-complete ~100pc sample",         {obsconditions: BRIGHT|GRAY|DARK}]
+
+    # Second layer flags additional subclasses that could apply to any
+    # of the main classes. These sort targets in each input catalog into
+    # distinct groups for the purpose of assigning priorities and observing
+    # conditions.
+    
+    # e.g. MWS_MAIN & MWS_LOW_GAL_B & MWS_MAIN_FAINT & MWS_PLX & MWS_REOBS 
+     
+    # => A main sample star at low galactic latitude, faint enough to be
+    # considered filler but with parallax factored into the subpriority and
+    # targeted for reobservation if possible.
+    
+    #- 4: MWS_MAIN north/south splits
+    - [MWS_MAIN_NORTH,      4, "Milky Way Survey cuts tuned for Bok/Mosaic",              {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_SOUTH,      5, "Milky Way Survey cuts tuned for DECam",                   {obsconditions: BRIGHT|GRAY|DARK}]
+
+    #- 8: Sub-classes of MWS_MAIN
+    - [MWS_MAIN_BLUE,       8, "Milky Way Survey magnitude limited blue sample",          {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_BLUE_NORTH, 9, "MWS magnitude limited blue sample tuned for Bok/Mosaic",  {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_BLUE_SOUTH, 10, "MWS magnitude limited blue sample tuned for DECam",      {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED,        11, "Milky Way Survey magnitude limited red sample",          {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED_NORTH,  12, "MWS magnitude limited red sample tuned for Bok/Mosaic",  {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED_SOUTH,  13, "MWS magnitude limited red sample tuned for DECam",       {obsconditions: BRIGHT|GRAY|DARK}]
+
+#- ADM SV secondary survey targets bit mask.
+#- ADM note that the 'filenames', here, should all be present in the
+#- ADM directory that corresponds to the $SECONDARY_DIR/sv1 environment
+#- ADM variable, e.g. $SECONDARY_DIR/sv1/backstop.fits for BACKSTOP targets.
+sv1_scnd_mask:
+    - [VETO,        0, "Never observe, even if a primary target bit is set",
+       {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18, filename: 'veto'}]
+    - [BACKSTOP,    1, "Gaia-selected targets of last resort",
+       {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18, filename: 'backstop'}]
+    - [DR16Q,       2, "Known quasars from the SDSS DR16Q catalog",
+       {obsconditions: DARK|GRAY, filename: 'dr16q'}]
+
+#- Observation State
+#- if a target passes more than one target bit, it is possible that one bit
+#- will consider the observations "DONE" while another bit will want "MORE".
+#- DONOTOBSERVE trumps MORE which trumps DONE
+#- ADM It's possible that we'll want different obsmask criteria compared
+#- ADM to the obsmask in targetmask.yaml for the main survey
+#- ADM (but it's unlikely we'll want different *obsconditions* or *targetids*
+sv1_obsmask:
+    - [UNOBS,       0, "unobserved"]
+    - [OBS,         1, "observed but no spectro pipeline answer yet"]
+    - [DONE,        2, "enough observations already obtained"]
+    - [MORE_ZWARN,  3, "ambiguous redshift; need more observations"]
+    - [MORE_ZGOOD,  4, "redshift known; need more observations"]
+    - [DONOTOBSERVE,  16, "Do not observe this target (possibly temporarily)"]
+
+#- Priorities for each target bit
+#- Numerically larger priorities are higher priority to be observed first.
+#- NOTE: these aren't a bitmask, they are a mapping from bit -> priority
+#- SAME_AS_XXX means to use the priorities for bitname XXX
+#- -1 means the concept of priority doesn't really apply to this target class
+#- Every target bit must define priority for "UNOBS"
+#- Default priority for "MORE_ZGOOD" is same as "UNOBS"
+#- Other states are default 1 unless specified here
+priorities:
+    #- Dark Survey: priorities 3000 - 3999
+    sv1_desi_mask:
+        ELG: {UNOBS: 3000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        LRG: {UNOBS: 3200, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        QSO: {UNOBS: 3400, MORE_ZGOOD: 3500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        LRG_INIT_4PASS: SAME_AS_LRG
+        LRG_SUPER_4PASS: SAME_AS_LRG
+        LRG_INIT_8PASS: SAME_AS_LRG
+        LRG_SUPER_8PASS: SAME_AS_LRG
+        LOWZ_FILLER: {UNOBS: 10, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        ELG_SV_GTOT: SAME_AS_ELG
+        ELG_SV_GFIB: SAME_AS_ELG
+        ELG_FDR_GTOT: SAME_AS_ELG
+        ELG_FDR_GFIB: SAME_AS_ELG
+        QSO_COLOR_4PASS: SAME_AS_QSO
+        QSO_RF_4PASS:    SAME_AS_QSO
+        QSO_COLOR_8PASS: SAME_AS_QSO
+        QSO_RF_8PASS:    SAME_AS_QSO
+        QSO_HZ_F:        SAME_AS_QSO
+        QSO_Z5:          SAME_AS_QSO
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        LRG_INIT_4PASS_NORTH: {UNOBS: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        LRG_SUPER_4PASS_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_INIT_8PASS_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_SUPER_8PASS_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LOWZ_FILLER_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_INIT_4PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_SUPER_4PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_INIT_8PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LRG_SUPER_8PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        LOWZ_FILLER_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_SV_GTOT_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_SV_GFIB_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_FDR_GTOT_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_FDR_GFIB_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_SV_GTOT_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_SV_GFIB_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_FDR_GTOT_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        ELG_FDR_GFIB_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_COLOR_4PASS_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_RF_4PASS_NORTH:    SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_COLOR_8PASS_NORTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_RF_8PASS_NORTH:    SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_HZ_F_NORTH:        SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_Z5_NORTH:          SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_COLOR_4PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_RF_4PASS_SOUTH:    SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_COLOR_8PASS_SOUTH: SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_RF_8PASS_SOUTH:    SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_HZ_F_SOUTH:        SAME_AS_LRG_INIT_4PASS_NORTH
+        QSO_Z5_SOUTH:          SAME_AS_LRG_INIT_4PASS_NORTH
+        BAD_SKY: {UNOBS: 0, OBS: 0, DONE: 0, MORE_ZWARN: 0, MORE_ZGOOD: 0}
+        #- Standards and sky are treated specially; priorities don't apply
+        STD_FAINT:  -1
+        STD_WD:     -1
+        SKY:        -1
+        SUPP_SKY:   -1
+        STD_BRIGHT: -1
+        # STD_FAINT_BEST: -1
+        # STD_BRIGHT_BEST: -1
+        SV: -1
+        NO_TARGET:  -1
+        #- placeholders to show we haven't forgotten these bits, but the
+        #- exact bits in the other sections define the priorities
+        BRIGHT_OBJECT: -1
+        IN_BRIGHT_OBJECT: -1
+        NEAR_BRIGHT_OBJECT: -1
+        BGS_ANY: -1
+        MWS_ANY: -1
+        SCND_ANY: -1
+
+    #- Bright Galaxy Survey: priorities 2000-2997
+    # ADM reserve 2998 for MWS_WD (ensuring a priority below Dark Survey targets, just in case)
+    #- reobserving successes has lower priority than MWS
+    sv1_bgs_mask:
+        BGS_FAINT: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_BRIGHT: {UNOBS: 2100, MORE_ZWARN: 2100, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_FAINT_EXT: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_LOWQ: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_FIBMAG: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        BGS_FAINT_SOUTH: {UNOBS: 0, MORE_ZWARN: 0, MORE_ZGOOD: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        BGS_FAINT_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_BRIGHT_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_BRIGHT_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_FAINT_EXT_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_FAINT_EXT_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_LOWQ_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_LOWQ_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_FIBMAG_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_FIBMAG_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_KNOWN_ANY: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_KNOWN_COLLIDED: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_KNOWN_SDSS: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_KNOWN_BOSS: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+
+    #- Milky Way Survey: priorities 1000-1999
+    # ADM WDs should be prioritized above BGS at 2998
+    sv1_mws_mask:
+        MWS_MAIN:                     {UNOBS: 1500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        MWS_WD:                       {UNOBS: 2998, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        MWS_NEARBY:                   {UNOBS: 1600, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        MWS_MAIN_NORTH:               {UNOBS: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        MWS_MAIN_SOUTH:               SAME_AS_MWS_MAIN_NORTH
+        MWS_MAIN_BLUE:                SAME_AS_MWS_MAIN
+        MWS_MAIN_BLUE_NORTH:          SAME_AS_MWS_MAIN_NORTH
+        MWS_MAIN_BLUE_SOUTH:          SAME_AS_MWS_MAIN_NORTH
+        MWS_MAIN_RED:                 SAME_AS_MWS_MAIN
+        MWS_MAIN_RED_NORTH:           SAME_AS_MWS_MAIN_NORTH
+        MWS_MAIN_RED_SOUTH:           SAME_AS_MWS_MAIN_NORTH
+
+    # ADM secondary target priorities. Probably all have very low UNOBS
+    sv1_scnd_mask:
+        VETO:                         {UNOBS:  0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        BACKSTOP:                     {UNOBS: 10, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        DR16Q:                        {UNOBS: 10, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+
+# ADM INITIAL number of observations (NUMOBS) for each target bit
+# ADM SAME_AS_XXX means to use the NUMOBS for bitname XXX
+# ADM -1 means that the concept of NUMOBS doesn't apply to this bit
+numobs:
+    # ADM initial number of observations for targets in the main (dark time) survey
+    sv1_desi_mask:
+        ELG: 1
+        LRG: 2
+        QSO: 4
+        LRG_INIT_4PASS: 4
+        LRG_SUPER_4PASS: 4
+        LRG_INIT_8PASS: 8
+        LRG_SUPER_8PASS: 8
+        LOWZ_FILLER: 1
+        ELG_SV_GTOT: SAME_AS_ELG
+        ELG_SV_GFIB: SAME_AS_ELG
+        ELG_FDR_GTOT: SAME_AS_ELG
+        ELG_FDR_GFIB: SAME_AS_ELG
+        QSO_COLOR_4PASS: 4
+        QSO_RF_4PASS:    4
+        QSO_COLOR_8PASS: 8
+        QSO_RF_8PASS:    8
+        QSO_HZ_F:        SAME_AS_QSO
+        QSO_Z5:          SAME_AS_QSO
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        LRG_INIT_4PASS_NORTH:  0
+        LRG_SUPER_4PASS_NORTH: 0
+        LRG_INIT_8PASS_NORTH:  0
+        LRG_SUPER_8PASS_NORTH: 0
+        LOWZ_FILLER_NORTH: 0
+        LRG_INIT_4PASS_SOUTH:  0
+        LRG_SUPER_4PASS_SOUTH: 0
+        LRG_INIT_8PASS_SOUTH:  0
+        LRG_SUPER_8PASS_SOUTH: 0
+        LOWZ_FILLER_SOUTH: 0
+        ELG_SV_GTOT_NORTH: 0
+        ELG_SV_GFIB_NORTH: 0
+        ELG_FDR_GTOT_NORTH: 0
+        ELG_FDR_GFIB_NORTH: 0
+        ELG_SV_GTOT_SOUTH: 0
+        ELG_SV_GFIB_SOUTH: 0
+        ELG_FDR_GTOT_SOUTH: 0
+        ELG_FDR_GFIB_SOUTH: 0
+        QSO_COLOR_4PASS_NORTH: 0
+        QSO_RF_4PASS_NORTH:    0
+        QSO_COLOR_8PASS_NORTH: 0
+        QSO_RF_8PASS_NORTH:    0
+        QSO_HZ_F_NORTH:        0
+        QSO_Z5_NORTH:          0
+        QSO_COLOR_4PASS_SOUTH: 0
+        QSO_RF_4PASS_SOUTH:    0
+        QSO_COLOR_8PASS_SOUTH: 0
+        QSO_RF_8PASS_SOUTH:    0
+        QSO_HZ_F_SOUTH:        0
+        QSO_Z5_SOUTH:          0
+        BAD_SKY: 0
+        #- Standards and sky are treated specially; NUMOBS doesn't apply
+        STD_FAINT:  -1
+        STD_WD:     -1
+        SKY:        -1
+        SUPP_SKY:   -1
+        STD_BRIGHT: -1
+        # STD_FAINT_BEST: -1
+        # STD_BRIGHT_BEST: -1
+        SV: -1
+        NO_TARGET:  -1
+        #- placeholders to show we haven't forgotten these bits, but the
+        #- exact bits in the other sections define the number of observations
+        BRIGHT_OBJECT: -1
+        IN_BRIGHT_OBJECT: -1
+        NEAR_BRIGHT_OBJECT: -1
+        BGS_ANY: -1
+        MWS_ANY: -1
+        SCND_ANY: -1
+
+    # ADM initial number of observations for targets in the Bright Galaxy Survey
+    sv1_bgs_mask:
+        BGS_FAINT: 1
+        BGS_BRIGHT: 1
+        BGS_FAINT_EXT: 1
+        BGS_LOWQ: 1
+        BGS_FIBMAG: 1
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        BGS_FAINT_SOUTH: 0
+        BGS_FAINT_NORTH: 0
+        BGS_BRIGHT_SOUTH: 0
+        BGS_BRIGHT_NORTH: 0
+        BGS_FAINT_EXT_SOUTH: 0
+        BGS_FAINT_EXT_NORTH: 0
+        BGS_LOWQ_SOUTH: 0
+        BGS_LOWQ_NORTH: 0
+        BGS_FIBMAG_SOUTH: 0
+        BGS_FIBMAG_NORTH: 0
+        BGS_KNOWN_ANY: 1
+        BGS_KNOWN_COLLIDED: 1
+        BGS_KNOWN_SDSS: 1
+        BGS_KNOWN_BOSS: 1
+
+    # ADM initial number of observations for targets in the Milky Way Survey
+    sv1_mws_mask:
+        MWS_MAIN:                     1
+        MWS_WD:                       1
+        MWS_NEARBY:                   1
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        MWS_MAIN_NORTH:               0
+        MWS_MAIN_SOUTH:               0
+        MWS_MAIN_BLUE:                SAME_AS_MWS_MAIN
+        MWS_MAIN_BLUE_NORTH:          0
+        MWS_MAIN_BLUE_SOUTH:          0
+        MWS_MAIN_RED:                 SAME_AS_MWS_MAIN
+        MWS_MAIN_RED_NORTH:           0
+        MWS_MAIN_RED_SOUTH:           0
+
+    # ADM initial number of observations for secondary targets
+    sv1_scnd_mask:
+        VETO: 1
+        BACKSTOP: 1
+        DR16Q: 1

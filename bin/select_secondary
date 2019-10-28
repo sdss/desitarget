@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+
+import sys
+import fitsio
+import numpy as np
+import argparse
+from desitarget.secondary import select_secondary, _get_scxdir
+from desitarget.targets import main_cmx_or_sv
+from desitarget import io
+import os
+from glob import glob
+from time import time
+time0 = time()
+
+from desiutil.log import get_logger
+log = get_logger()
+
+from argparse import ArgumentParser
+ap = ArgumentParser(description='Generate file of secondary-only targets from $SCND_DIR, write matches to primary targets back to $SCND_DIR')
+ap.add_argument("priminfodir",
+                help="Location of the directory that has previously matched primary and secondary targets to recover the unique primary TARGETIDs " +
+                "(as made by, e.g., select_targets without the --nosecondary option set).")
+ap.add_argument("dest",
+                help="Output secondary-only targets file (e.g. '/project/projectdirs/desi/target/catalogs/secondary-dr6-0.20.0.fits' at NERSC)")
+ap.add_argument("-s", "--separation", type=float, default=1.,
+                help='Angular separation at which to match secondary targets to themselves. Defaults to [1] arcsec.')
+ap.add_argument("--scnddir",
+                help="Base directory of secondary target files (e.g. '/project/projectdirs/desi/target/secondary' at NERSC). " +
+                "Defaults to SCND_DIR environment variable.")
+ap.add_argument("--writeall",
+                action='store_true',
+                help="Default behavior is to split targets by bright/dark-time surveys. Set this to ALSO write a file of ALL targets")
+ns = ap.parse_args()
+
+# ADM Sanity check that priminfodir exists.
+if not os.path.exists(ns.priminfodir):
+    msg = "{} doesn't exist".format(ns.priminfodir)
+    log.critical(msg)
+    raise ValueError(msg)
+
+# ADM read survey type from the header of the first file in priminfodir.
+fns = glob(os.path.join(ns.priminfodir, "*fits"))
+hdr = fitsio.read_header(fns[0], 'SCND_TARG')
+surv = hdr["SURVEY"].rstrip()
+
+# ADM find the SCND_DIR environment variable, if it wasn't passed.
+scxdir = _get_scxdir(ns.scnddir)
+# ADM and augment the scxdir if this is an SV set of primary files.
+if surv != 'main':
+    scxdir = os.path.join(scxdir, surv)
+
+scx = select_secondary(ns.priminfodir, sep=ns.separation, scxdir=scxdir, darkbright=(not ns.writeall))
+
+# ADM add the primary directory and matching radius to the header
+# ADM from the first primary file.
+hdr['PRIMDIR'] = ns.priminfodir
+hdr['SEP'] = float(ns.separation)
+
+# ADM write out the secondary targets, with bright-time
+# ADM and dark-time targets written separately.
+obscons = ["BRIGHT", "DARK"]
+
+if ns.writeall:
+    obscons.append(None)
+for obscon in obscons:
+    # ADM the dict() here is to make hdr immutable.
+    ntargs, outfile = io.write_secondary(ns.dest, scx, primhdr=dict(hdr),
+                                         scxdir=scxdir, obscon=obscon)
+
+    log.info('{} secondary targets written to {}...t={:.1f}mins'
+             .format(ntargs, outfile, (time()-time0)/60.))

@@ -1,21 +1,72 @@
-'''
-Testing desitarget.mock.build, but only add_mock_shapes_and_fluxes for now
-'''
-
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Test desitarget.mock.build, but only add_mock_shapes_and_fluxes for now.
+"""
 import unittest
+import tempfile
+import os
+import shutil
+from pkg_resources import resource_filename
 import numpy as np
 from astropy.table import Table
 import healpy as hp
+import fitsio
 
 import desimodel.footprint
 
 from desitarget.mock.sky import random_sky
+from desitarget.mock.build import targets_truth
 from desitarget.targetmask import desi_mask, bgs_mask, mws_mask
 
 class TestMockBuild(unittest.TestCase):
     
     def setUp(self):
-        pass
+        self.outdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        if os.path.exists(self.outdir):
+            shutil.rmtree(self.outdir)
+
+    @unittest.skipUnless('DESITARGET_RUN_MOCK_UNITTEST' in os.environ, '$DESITARGET_RUN_MOCK_UNITTEST not set; skipping expensive mock tests')
+    def test_targets_truth(self):
+        configfile = resource_filename('desitarget.mock', 'data/select-mock-targets.yaml')
+
+        import yaml
+        with open(configfile) as fx:
+            params = yaml.safe_load(fx)
+
+        for targettype in params['targets'].keys():
+            mockfile = params['targets'][targettype]['mockfile'].format(**os.environ)
+            self.assertTrue(os.path.exists(mockfile), 'Missing {}'.format(mockfile))
+
+        #- Test without spectra
+        targets_truth(params, healpixels=[99737,], nside=256, output_dir=self.outdir, no_spectra=True)
+        for obscon in ['bright', 'dark']:
+            targetfile = self.outdir + '/997/99737/' + obscon + '/targets-256-99737.fits'
+            truthfile = self.outdir + '/997/99737/' + obscon + '/truth-256-99737.fits'
+            self.assertTrue(os.path.exists(targetfile))
+            self.assertTrue(os.path.exists(truthfile))
+
+            with fitsio.FITS(truthfile) as fx:
+                self.assertTrue('TRUTH' in fx)
+                #- WAVE is there, and FLUX is there but with strange shape (n,0)
+                self.assertTrue('WAVE' not in fx)
+                self.assertTrue('FLUX' not in fx)
+
+        #- Test with spectra
+        shutil.rmtree(self.outdir+'/997')
+
+        targets_truth(params, healpixels=[99737,], nside=256, output_dir=self.outdir, no_spectra=False)
+        for obscon in ['bright', 'dark']:
+            targetfile = self.outdir + '/997/99737/' + obscon + '/targets-256-99737.fits'
+            truthfile = self.outdir + '/997/99737/' + obscon + '/truth-256-99737.fits'
+            self.assertTrue(os.path.exists(targetfile))
+            self.assertTrue(os.path.exists(truthfile))
+
+            with fitsio.FITS(truthfile) as fx:
+                self.assertTrue('TRUTH' in fx)
+                self.assertTrue('WAVE' in fx)
+                self.assertTrue('FLUX' in fx)
 
     @unittest.skip('This test is deprecated, so skip for now.')
     def test_shapes_and_fluxes(self):
@@ -47,7 +98,7 @@ class TestMockBuild(unittest.TestCase):
 
     def test_sky(self):
         nside = 256
-        ra, dec = random_sky(nside)
+        ra, dec, pix = random_sky(nside, allsky=False)
         self.assertEqual(len(ra), len(dec))
         surveypix = desimodel.footprint.tiles2pix(nside)
         theta = np.radians(90 - dec)
@@ -57,3 +108,10 @@ class TestMockBuild(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+def test_suite():
+    """Allows testing of only this module with the command:
+
+        python setup.py test -m desitarget.test.test_mock_build
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

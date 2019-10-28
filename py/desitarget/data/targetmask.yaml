@@ -8,35 +8,30 @@ desi_mask:
     - [ELG,         1, "ELG", {obsconditions: DARK|GRAY}]
     - [QSO,         2, "QSO", {obsconditions: DARK}]
     
-    #- ADM allow the primary targets to be split by number of passes
-    - [LRG_1PASS,   3, "LRG observed in 1st pass", {obsconditions: DARK}]
-    - [LRG_2PASS,   4, "LRG observed in 2nd pass", {obsconditions: DARK}]
-
     #- North vs. South selections
-    - [LRG_NORTH,   8, "LRG from Bok/Mosaic data", {obsconditions: DARK}]
-    - [ELG_NORTH,   9, "ELG from Bok/Mosaic data", {obsconditions: DARK|GRAY}]
-    - [QSO_NORTH,   10, "QSO from Bok/Mosaic data", {obsconditions: DARK}]
+    - [LRG_NORTH,   8, "LRG cuts tuned for Bok/Mosaic data",  {obsconditions: DARK}]
+    - [ELG_NORTH,   9, "ELG cuts tuned for Bok/Mosaic data",  {obsconditions: DARK|GRAY}]
+    - [QSO_NORTH,   10, "QSO cuts tuned for Bok/Mosaic data", {obsconditions: DARK}]
 
-    - [LRG_SOUTH,   16, "LRG from DECam data", {obsconditions: DARK}]
-    - [ELG_SOUTH,   17, "ELG from DECam data", {obsconditions: DARK|GRAY}]
-    - [QSO_SOUTH,   18, "QSO from DECam data", {obsconditions: DARK}]
-
-    #- North vs. South selections for different passes
-    - [LRG_1PASS_NORTH,  24, "LRG observed in 1st pass from Bok/Mosaic", {obsconditions: DARK}]
-    - [LRG_2PASS_NORTH,  25, "LRG observed in 2nd pass from Bok/Mosaic", {obsconditions: DARK}]
-
-    - [LRG_1PASS_SOUTH,  28, "LRG observed in 1st pass from DECam", {obsconditions: DARK}]
-    - [LRG_2PASS_SOUTH,  29, "LRG observed in 2nd pass from DECam", {obsconditions: DARK}]
+    - [LRG_SOUTH,   16, "LRG cuts tuned for DECam data",      {obsconditions: DARK}]
+    - [ELG_SOUTH,   17, "ELG cuts tuned for DECam data",      {obsconditions: DARK|GRAY}]
+    - [QSO_SOUTH,   18, "QSO cuts tuned for DECam data",      {obsconditions: DARK}]
 
     #- Calibration targets
     - [SKY,         32, "Blank sky locations",
         {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
-    - [STD_FSTAR,   33, "F-type standard stars", {obsconditions: DARK|GRAY}]
+    - [STD_FAINT,   33, "Standard stars for dark/gray conditions", {obsconditions: DARK|GRAY}]
     - [STD_WD,      34, "White Dwarf stars", {obsconditions: DARK|GRAY|BRIGHT}]
-    - [STD_BRIGHT,  35, "F-type standard for BRIGHT conditions",
+    - [STD_BRIGHT,  35, "Standard stars for BRIGHT conditions",
         {obsconditions: BRIGHT}]
     - [BAD_SKY,      36, "Blank sky locations that are imperfect but still useable",
         {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+    - [SUPP_SKY,      37, "SKY is based on Gaia-avoidance (SKY will be set, too)",
+        {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
+
+    #- Reserving some bits that we may not use
+    # - [STD_FAINT_BEST,   38, "High quality faint standard stars",  {obsconditions: DARK|GRAY}]
+    # - [STD_BRIGHT_BEST,  39, "High quality bright standard stars", {obsconditions: BRIGHT}]
 
     #- Reserved convenience bits that can, e.g., be set downstream of desitarget
     - [NO_TARGET,   49, "No known target at this location",
@@ -51,24 +46,23 @@ desi_mask:
     #- A bit for another survey is set
     - [BGS_ANY,             60, "Any BGS bit is set", {obsconditions: BRIGHT}]
     - [MWS_ANY,             61, "Any MWS bit is set", {obsconditions: BRIGHT}]
-    - [SECONDARY_ANY,       62, "Any secondary bit is set",
+    - [SCND_ANY     ,       62, "Any secondary bit is set",
         {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18}]
     
 #- Bright Galaxy Survey
 bgs_mask:    
-    - [BGS_FAINT,           0, "BGS faint targets", {obsconditions: BRIGHT|GRAY|DARK}]
-    - [BGS_BRIGHT,          1, "BGS bright targets", {obsconditions: BRIGHT}]
+    - [BGS_FAINT,           0, "BGS faint targets",                     {obsconditions: BRIGHT|GRAY|DARK}]
+    - [BGS_BRIGHT,          1, "BGS bright targets",                    {obsconditions: BRIGHT}]
+    - [BGS_WISE,            2, "BGS wise targets",                      {obsconditions: BRIGHT}]
+    - [BGS_FAINT_HIP,       3, "BGS faint targets at bright priorty",   {obsconditions: BRIGHT}]
 
     #- BGS North vs. South selections
-    - [BGS_FAINT_NORTH,     8, "BGS faint targets from Bok/Mosaic", {obsconditions: BRIGHT|GRAY|DARK}]
-    - [BGS_BRIGHT_NORTH,    9, "BGS bright targets from Bok/Mosaic", {obsconditions: BRIGHT}]
-    - [BGS_FAINT_SOUTH,     16, "BGS faint targets from DECam", {obsconditions: BRIGHT|GRAY|DARK}]
-    - [BGS_BRIGHT_SOUTH,    17, "BGS bright targets from DECam", {obsconditions: BRIGHT}]
-
-    - [BGS_KNOWN_ANY,       40, "Known target from another survey", {obsconditions: BRIGHT}]
-    - [BGS_KNOWN_COLLIDED,  41, "BGS known SDSS/BOSS fiber collided", {obsconditions: BRIGHT}]
-    - [BGS_KNOWN_SDSS,      42, "BGS known SDSS targets", {obsconditions: BRIGHT}]
-    - [BGS_KNOWN_BOSS,      43, "BGS known BOSS targets", {obsconditions: BRIGHT}]
+    - [BGS_FAINT_NORTH,     8, "BGS faint cuts tuned for Bok/Mosaic",              {obsconditions: BRIGHT|GRAY|DARK}]
+    - [BGS_BRIGHT_NORTH,    9, "BGS bright cuts tuned for Bok/Mosaic",             {obsconditions: BRIGHT}]
+    - [BGS_WISE_NORTH,      10, "BGS WISE cuts tuned for Bok/Mosaic",              {obsconditions: BRIGHT}]
+    - [BGS_FAINT_SOUTH,     16, "BGS faint cuts tuned for DECam",                  {obsconditions: BRIGHT|GRAY|DARK}]
+    - [BGS_BRIGHT_SOUTH,    17, "BGS bright cuts tuned for DECam",                 {obsconditions: BRIGHT}]
+    - [BGS_WISE_SOUTH,      18, "BGS WISE cuts tuned for DECam",                   {obsconditions: BRIGHT}]
 
 #- Milky Way Survey
 mws_mask:
@@ -77,7 +71,7 @@ mws_mask:
     # input catalogues. 
    
     #- Bits 0-3 (7 ids)
-    - [MWS_MAIN,            0, "Milky Way Survey magnitude limited bulk sample",         {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_BROAD,           0, "Milky Way Survey magnitude limited bulk sample",         {obsconditions: BRIGHT|GRAY|DARK}]
     - [MWS_WD,              1, "Milky Way Survey White Dwarf",                           {obsconditions: BRIGHT|GRAY|DARK}]
     - [MWS_NEARBY,          2, "Milky Way Survey volume-complete ~100pc sample",         {obsconditions: BRIGHT|GRAY|DARK}]
 
@@ -92,17 +86,29 @@ mws_mask:
     # considered filler but with parallax factored into the subpriority and
     # targeted for reobservation if possible.
     
-    #- 4: MWS_MAIN north/south splits
-    - [MWS_MAIN_NORTH,      4, "Milky Way Survey targets from Bok/Mosaic",               {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_SOUTH,      5, "Milky Way Survey targets from DECam",                    {obsconditions: BRIGHT|GRAY|DARK}]
+    #- 4: MWS_BROAD north/south splits
+    - [MWS_BROAD_NORTH,     4, "Milky Way Survey cuts tuned for Bok/Mosaic",               {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_BROAD_SOUTH,     5, "Milky Way Survey cuts tuned for DECam",                    {obsconditions: BRIGHT|GRAY|DARK}]
 
     #- 8: Sub-classes of MWS_MAIN
-    - [MWS_MAIN_BLUE,       8, "Milky Way Survey magnitude limited blue sample",         {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_BLUE_NORTH, 9, "MWS magnitude limited blue sample from Bok/Mosaic",      {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_BLUE_SOUTH, 10, "MWS magnitude limited blue sample from DECam",          {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_RED,        11, "Milky Way Survey magnitude limited red sample",         {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_RED_NORTH,  12, "MWS magnitude limited red sample from Bok/Mosaic",      {obsconditions: BRIGHT|GRAY|DARK}]
-    - [MWS_MAIN_RED_SOUTH,  13, "MWS magnitude limited red sample from DECam",           {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_BLUE,       8, "Milky Way Survey magnitude limited blue sample",              {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_BLUE_NORTH, 9, "MWS magnitude limited blue sample tuned for Bok/Mosaic",      {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_BLUE_SOUTH, 10, "MWS magnitude limited blue sample tuned for DECam",          {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED,        11, "Milky Way Survey magnitude limited red sample",              {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED_NORTH,  12, "MWS magnitude limited red sample tuned for Bok/Mosaic",      {obsconditions: BRIGHT|GRAY|DARK}]
+    - [MWS_MAIN_RED_SOUTH,  13, "MWS magnitude limited red sample tuned for DECam",           {obsconditions: BRIGHT|GRAY|DARK}]
+
+#- ADM secondary survey targets bit mask.
+#- ADM note that the 'filenames', here, should all be present in the
+#- ADM directory that corresponds to the $SECONDARY_DIR environment
+#- ADM variable, e.g. $SECONDARY_DIR/backstop.fits for BACKSTOP targets.
+scnd_mask:
+    - [VETO,        0, "Never observe, even if a primary target bit is set",
+       {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18, filename: 'veto'}]
+    - [BACKSTOP,    1, "Gaia-selected targets of last resort",
+       {obsconditions: DARK|GRAY|BRIGHT|POOR|TWILIGHT12|TWILIGHT18, filename: 'backstop'}]
+    - [DR16Q,       2, "Known quasars from the SDSS DR16Q catalog",
+       {obsconditions: DARK|GRAY, filename: 'dr16q'}]
 
 #- Observing conditions
 #- These are a bitmask to allow target bits to specify multiple conditions
@@ -135,12 +141,13 @@ obsmask:
 #- https://desi.lbl.gov/DocDB/cgi-bin/private/RetrieveFile?docid=2348
 #- Updated to include RELEASE from the new DR4+ data model, circa June 30th, 2016
 targetid_mask:
-    - [OBJID,       0, "RIGHTMOST bit that encodes OBJID (OBJID encompasses bits 0-21 inclusive)",      {nbits: 22}]
-    - [BRICKID,    22, "RIGHTMOST bit that encodes BRICKID (BRICKID encompasses bits 22-41 inclusive)", {nbits: 20}]
-    - [RELEASE,    42, "RIGHTMOST bit that encodes Data Release (DR encompasses bits 42-57 inclusive)", {nbits: 16}]
-    - [MOCK,       58, "this target is a mock target",                                                  {nbits: 1}]
-    - [SKY,        59, "this target is a sky fiber target",                                             {nbits: 1}]
-    - [RESERVED,   60, "RIGHMOST bit for left over bit space (encompasses bits 60-63 inclusive)",       {nbits: 4}]
+    - [OBJID,       0, "RIGHTMOST bit that encodes OBJID (OBJID encompasses bits 0-21 inclusive)",       {nbits: 22}]
+    - [BRICKID,    22, "RIGHTMOST bit that encodes BRICKID (BRICKID encompasses bits 22-41 inclusive)",  {nbits: 20}]
+    - [RELEASE,    42, "RIGHTMOST bit that encodes Data Release (DR encompasses bits 42-57 inclusive)",  {nbits: 16}]
+    - [MOCK,       58, "this target is a mock target",                                                   {nbits: 1}]
+    - [SKY,        59, "this target is a sky fiber target",                                              {nbits: 1}]
+    - [GAIADR,     60, "RIGHTMOST bit encoding Gaia DR number when not in Legacy Surveys (bits 60-61)",  {nbits: 2}]
+    - [RESERVED,   62, "RIGHTMOST bit for left over bit space (encompasses bits 62-63 inclusive)",       {nbits: 2}]
 
 #- Priorities for each target bit
 #- Numerically larger priorities are higher priority to be observed first.
@@ -157,24 +164,22 @@ priorities:
         ELG: {UNOBS: 3000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         LRG: {UNOBS: 3200, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         QSO: {UNOBS: 3400, MORE_ZGOOD: 3500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        LRG_1PASS: SAME_AS_LRG
-        LRG_2PASS: SAME_AS_LRG
-        LRG_NORTH: SAME_AS_LRG
-        ELG_NORTH: SAME_AS_ELG
-        QSO_NORTH: SAME_AS_QSO
-        LRG_SOUTH: SAME_AS_LRG
-        ELG_SOUTH: SAME_AS_ELG
-        QSO_SOUTH: SAME_AS_QSO
-        LRG_1PASS_NORTH: SAME_AS_LRG
-        LRG_2PASS_NORTH: SAME_AS_LRG
-        LRG_1PASS_SOUTH: SAME_AS_LRG
-        LRG_2PASS_SOUTH: SAME_AS_LRG
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        LRG_NORTH: {UNOBS: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        ELG_NORTH: SAME_AS_LRG_NORTH
+        QSO_NORTH: SAME_AS_LRG_NORTH
+        LRG_SOUTH: SAME_AS_LRG_NORTH
+        ELG_SOUTH: SAME_AS_LRG_NORTH
+        QSO_SOUTH: SAME_AS_LRG_NORTH
         BAD_SKY: {UNOBS: 0, OBS: 0, DONE: 0, MORE_ZWARN: 0, MORE_ZGOOD: 0}
         #- Standards and sky are treated specially; priorities don't apply
-        STD_FSTAR:  -1
+        STD_FAINT:  -1
         STD_WD:     -1
         SKY:        -1
+        SUPP_SKY:   -1
         STD_BRIGHT: -1
+        # STD_FAINT_BEST: -1
+        # STD_BRIGHT_BEST: -1
         NO_TARGET:  -1
         #- placeholders to show we haven't forgotten these bits, but the
         #- exact bits in the other sections define the priorities
@@ -183,38 +188,113 @@ priorities:
         NEAR_BRIGHT_OBJECT: -1
         BGS_ANY: -1
         MWS_ANY: -1
-        SECONDARY_ANY: -1
+        SCND_ANY: -1
 
-    #- Bright Galaxy Survey: priorities 2000-2999
+    #- Bright Galaxy Survey: priorities 2000-2997
+    # ADM reserve 2998 for MWS_WD (ensuring a priority below Dark Survey targets, just in case)
     #- reobserving successes has lower priority than MWS
     bgs_mask:
         BGS_FAINT: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         BGS_BRIGHT: {UNOBS: 2100, MORE_ZWARN: 2100, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        BGS_FAINT_SOUTH: SAME_AS_BGS_FAINT
-        BGS_FAINT_NORTH: SAME_AS_BGS_FAINT
-        BGS_BRIGHT_SOUTH: SAME_AS_BGS_BRIGHT
-        BGS_BRIGHT_NORTH: SAME_AS_BGS_BRIGHT
-        BGS_KNOWN_ANY: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        BGS_KNOWN_COLLIDED: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        BGS_KNOWN_SDSS: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        BGS_KNOWN_BOSS: {UNOBS: 100, MORE_ZWARN: 200, MORE_ZGOOD: 300, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_WISE: {UNOBS: 2000, MORE_ZWARN: 2000, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        BGS_FAINT_HIP: {UNOBS: 2100, MORE_ZWARN: 2100, MORE_ZGOOD: 1000, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        BGS_FAINT_SOUTH: {UNOBS: 0, MORE_ZWARN: 0, MORE_ZGOOD: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        BGS_FAINT_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_BRIGHT_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_BRIGHT_NORTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_WISE_SOUTH: SAME_AS_BGS_FAINT_SOUTH
+        BGS_WISE_NORTH: SAME_AS_BGS_FAINT_SOUTH
 
     #- Milky Way Survey: priorities 1000-1999
+    # ADM WDs should be prioritized above BGS at 2998
     mws_mask: 
-        MWS_MAIN:                     {UNOBS: 1500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        MWS_WD:                       {UNOBS: 1600, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        MWS_BROAD:                    {UNOBS: 1400, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        MWS_WD:                       {UNOBS: 2998, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
         MWS_NEARBY:                   {UNOBS: 1600, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
-        MWS_MAIN_NORTH:               SAME_AS_MWS_MAIN
-        MWS_MAIN_SOUTH:               SAME_AS_MWS_MAIN
-        MWS_MAIN_BLUE:                SAME_AS_MWS_MAIN
-        MWS_MAIN_BLUE_NORTH:          SAME_AS_MWS_MAIN
-        MWS_MAIN_BLUE_SOUTH:          SAME_AS_MWS_MAIN
-        MWS_MAIN_RED:                 SAME_AS_MWS_MAIN
-        MWS_MAIN_RED_NORTH:           SAME_AS_MWS_MAIN
-        MWS_MAIN_RED_SOUTH:           SAME_AS_MWS_MAIN
+        # ADM don't prioritize a N/S target if it doesn't have other bits set
+        MWS_BROAD_NORTH:              {UNOBS: 0, DONE: 0, OBS: 0, DONOTOBSERVE: 0}
+        MWS_BROAD_SOUTH:              SAME_AS_MWS_BROAD_NORTH
+        MWS_MAIN_BLUE:                {UNOBS: 1500, DONE: 2, OBS: 1, DONOTOBSERVE: 0}
+        MWS_MAIN_BLUE_NORTH:          SAME_AS_MWS_BROAD_NORTH
+        MWS_MAIN_BLUE_SOUTH:          SAME_AS_MWS_BROAD_NORTH
+        MWS_MAIN_RED:                 SAME_AS_MWS_MAIN_BLUE
+        MWS_MAIN_RED_NORTH:           SAME_AS_MWS_BROAD_NORTH
+        MWS_MAIN_RED_SOUTH:           SAME_AS_MWS_BROAD_NORTH
 
+    # ADM secondary target priorities. Probably all have very low UNOBS...
+    scnd_mask:
+    # ADM ...except VETO, which is special and always takes precedence.
+        VETO:                         {UNOBS: 10000, DONE: 10000, OBS: 0, DONOTOBSERVE: 0}
+        BACKSTOP:                     {UNOBS: 10,    DONE: 2,     OBS: 1, DONOTOBSERVE: 0}
+        DR16Q:                        {UNOBS: 10,    DONE: 2,     OBS: 1, DONOTOBSERVE: 0}
 
+# ADM INITIAL number of observations (NUMOBS) for each target bit
+# ADM SAME_AS_XXX means to use the NUMOBS for bitname XXX
+# ADM -1 means that the concept of NUMOBS doesn't apply to this bit
+numobs:
+    # ADM initial number of observations for targets in the main (dark time) survey
+    desi_mask:
+        ELG: 1
+        LRG: 1
+        QSO: 4
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        LRG_NORTH: 0
+        ELG_NORTH: 0
+        QSO_NORTH: 0
+        LRG_SOUTH: 0
+        ELG_SOUTH: 0
+        QSO_SOUTH: 0
+        BAD_SKY: 0
+        #- Standards and sky are treated specially; NUMOBS doesn't apply
+        STD_FAINT:  -1
+        STD_WD:     -1
+        SKY:        -1
+        SUPP_SKY:   -1
+        STD_BRIGHT: -1
+        # STD_FAINT_BEST: -1
+        # STD_BRIGHT_BEST: -1
+        NO_TARGET:  -1
+        #- placeholders to show we haven't forgotten these bits, but the
+        #- exact bits in the other sections define the number of observations
+        BRIGHT_OBJECT: -1
+        IN_BRIGHT_OBJECT: -1
+        NEAR_BRIGHT_OBJECT: -1
+        BGS_ANY: -1
+        MWS_ANY: -1
+        SCND_ANY: -1
 
+    # ADM initial number of observations for targets in the Bright Galaxy Survey
+    bgs_mask:
+        BGS_FAINT: 1
+        BGS_BRIGHT: 1
+        BGS_WISE: 1
+        BGS_FAINT_HIP: 1
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        BGS_FAINT_SOUTH: 0
+        BGS_FAINT_NORTH: 0
+        BGS_BRIGHT_SOUTH: 0
+        BGS_BRIGHT_NORTH: 0
+        BGS_WISE_SOUTH: 0
+        BGS_WISE_NORTH: 0
 
+    # ADM initial number of observations for targets in the Bright Galaxy Survey
+    mws_mask: 
+        MWS_BROAD:                    1
+        MWS_WD:                       1
+        MWS_NEARBY:                   1
+        # ADM don't observe a N/S target if it doesn't have other bits set
+        MWS_BROAD_NORTH:              0
+        MWS_BROAD_SOUTH:              0
+        MWS_MAIN_BLUE:                1
+        MWS_MAIN_BLUE_NORTH:          0
+        MWS_MAIN_BLUE_SOUTH:          0
+        MWS_MAIN_RED:                 SAME_AS_MWS_MAIN_BLUE
+        MWS_MAIN_RED_NORTH:           0
+        MWS_MAIN_RED_SOUTH:           0
 
-
+    # ADM initial number of observations for secondary targets
+    scnd_mask:
+        VETO: 1
+        BACKSTOP: 1
+        DR16Q: 1

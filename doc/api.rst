@@ -8,7 +8,10 @@ desitarget API
 .. automodule:: desitarget.brightmask
     :members:
 
-.. automodule:: desitarget.contammask
+.. automodule:: desitarget.cmx.cmx_cuts
+    :members:
+
+.. automodule:: desitarget.cmx.cmx_targetmask
     :members:
 
 .. automodule:: desitarget.cuts
@@ -44,12 +47,6 @@ desitarget API
 .. automodule:: desitarget.mock.mockmaker
     :members:
 
-.. automodule:: desitarget.mock.sample
-    :members:
-
-.. automodule:: desitarget.mock.sfdmap
-    :members:
-
 .. automodule:: desitarget.mock.sky
     :members:
 
@@ -74,6 +71,12 @@ desitarget API
 .. automodule:: desitarget.skyfibers
     :members:
 
+.. automodule:: desitarget.sv1.sv1_cuts
+    :members:
+
+.. automodule:: desitarget.sv1.sv1_targetmask
+    :members:
+
 .. automodule:: desitarget.targetmask
     :members:
 
@@ -84,4 +87,7 @@ desitarget API
     :members:
 
 .. automodule:: desitarget.train.train_mva_decals
+    :members:
+
+.. automodule:: desitarget.uratmatch
     :members:
